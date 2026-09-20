@@ -85,25 +85,24 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen flex-col justify-center bg-background px-6 py-12">
       <div className="mx-auto w-full max-w-md">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="brand-gradient flex size-11 items-center justify-center rounded-2xl shadow-glow">
-            <ChefHat className="size-6 text-primary-foreground" />
+        <div className="mb-10 flex flex-col items-center text-center">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-card">
+            <ChefHat className="size-6 text-primary" strokeWidth={1.7} />
           </div>
           <div>
-            <p className="font-display text-lg font-semibold">MealMate Partners</p>
-            <p className="text-xs text-muted-foreground">Run your restaurant. Grow your business.</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">MealMate Partners</p>
           </div>
         </div>
 
-        <div className="glass-card rounded-3xl p-6">
-          <h1 className="font-display text-2xl font-semibold">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <h1 className="text-center font-display text-3xl font-semibold italic leading-tight">
             {mode === "signup"
               ? "Create your account"
               : mode === "signin"
                 ? "Welcome back"
                 : "Reset your password"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-center text-sm font-light text-muted-foreground">
             {mode === "forgot"
               ? "We'll email you a secure link to set a new password."
               : "Use your restaurant email address."}
@@ -119,7 +118,7 @@ function AuthPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Thabo Nkosi"
                   required
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-lg bg-background"
                 />
               </div>
             ) : null}
@@ -134,7 +133,7 @@ function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@restaurant.co.za"
                 required
-                className="h-12 rounded-xl"
+                className="h-12 rounded-lg bg-background"
               />
             </div>
 
@@ -149,12 +148,12 @@ function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={8}
                   required
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-lg bg-background"
                 />
               </div>
             ) : null}
 
-            <Button type="submit" disabled={busy} className="tap-target h-12 w-full rounded-2xl text-base">
+            <Button type="submit" disabled={busy} className="tap-target h-12 w-full rounded-xl text-sm shadow-glow">
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {mode === "signup" ? "Create account" : mode === "signin" ? "Sign in" : "Send reset link"}
             </Button>
