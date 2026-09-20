@@ -17,8 +17,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background pb-[calc(76px+env(safe-area-inset-bottom))]">
-      <div className="mx-auto w-full max-w-2xl px-4 pt-5">{children}</div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-xl">
+      <div className="mx-auto w-full max-w-2xl px-4 pt-6">{children}</div>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-2xl items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
           {TABS.map((tab) => {
             const active = pathname === tab.to || pathname.startsWith(`${tab.to}/`);
@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={tab.to}
                 to={tab.to}
                 className={cn(
-                  "tap-target flex flex-1 flex-col items-center gap-1 rounded-2xl py-3 text-[11px] font-medium transition-colors",
+                  "tap-target flex flex-1 flex-col items-center gap-1 rounded-xl py-3 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
@@ -61,13 +61,13 @@ export function PageHeader({
           type="button"
           aria-label="Go back"
           onClick={() => navigate({ to: "/more" })}
-          className="tap-target mt-0.5 flex items-center justify-center rounded-2xl border border-border bg-card px-2 text-muted-foreground"
+           className="tap-target mt-0.5 flex items-center justify-center rounded-xl border border-border bg-card px-2 text-muted-foreground shadow-card"
         >
           <ChevronLeft className="size-5" />
         </button>
       ) : null}
       <div className="flex-1">
-        <h1 className="font-display text-2xl font-semibold">{title}</h1>
+        <h1 className="font-display text-2xl font-semibold leading-tight">{title}</h1>
         {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       {action}
