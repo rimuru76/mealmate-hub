@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BarChart3, ChefHat, ReceiptText, Sparkles } from "lucide-react";
+import { BarChart3, ChefHat, ReceiptText, UtensilsCrossed } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
 
 const SLIDES = [
   {
-    icon: Sparkles,
+    icon: UtensilsCrossed,
     title: "Welcome to MealMate Partners",
     body: "Everything you need to run your restaurant in one place.",
   },
