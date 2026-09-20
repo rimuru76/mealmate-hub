@@ -89,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Run your restaurant. Grow your business. The operating system for MealMate restaurants.",
       },
       { name: "author", content: "Taz Technologies" },
-      { name: "theme-color", content: "#0D0D0D" },
+      { name: "theme-color", content: "#F2EDDC" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
