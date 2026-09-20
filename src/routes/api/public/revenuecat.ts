@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/revenuecat")({
           event_type: type,
           entitlement,
           product_id: event.product_id ?? null,
-          payload: payload as unknown as Record<string, unknown>,
+          payload: payload as never,
         });
 
         await supabaseAdmin

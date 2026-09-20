@@ -21,8 +21,12 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedMoreRouteImport } from './routes/_authenticated/more'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
 import { Route as AuthenticatedRestaurantRouteImport } from './routes/_authenticated/restaurant'
+import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
+import { Route as ApiPublicRevenuecatRouteImport } from './routes/api/public/revenuecat'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -83,6 +87,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPromotionsRoute = AuthenticatedPromotionsRouteImport.update({
   id: '/promotions',
   path: '/promotions',
@@ -92,6 +101,22 @@ const AuthenticatedRestaurantRoute = AuthenticatedRestaurantRouteImport.update({
   id: '/restaurant',
   path: '/restaurant',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSubscriptionRoute =
+  AuthenticatedSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicRevenuecatRoute = ApiPublicRevenuecatRouteImport.update({
+  id: '/api/public/revenuecat',
+  path: '/api/public/revenuecat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -106,8 +131,12 @@ export interface FileRoutesByFullPath {
   '/menu': typeof AuthenticatedMenuRoute
   '/more': typeof AuthenticatedMoreRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/restaurant': typeof AuthenticatedRestaurantRoute
+  '/staff': typeof AuthenticatedStaffRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,8 +150,12 @@ export interface FileRoutesByTo {
   '/menu': typeof AuthenticatedMenuRoute
   '/more': typeof AuthenticatedMoreRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/restaurant': typeof AuthenticatedRestaurantRoute
+  '/staff': typeof AuthenticatedStaffRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,8 +171,12 @@ export interface FileRoutesById {
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/more': typeof AuthenticatedMoreRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
   '/_authenticated/restaurant': typeof AuthenticatedRestaurantRoute
+  '/_authenticated/staff': typeof AuthenticatedStaffRoute
+  '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -155,8 +192,12 @@ export interface FileRouteTypes {
     | '/menu'
     | '/more'
     | '/orders'
+    | '/payments'
     | '/promotions'
     | '/restaurant'
+    | '/staff'
+    | '/subscription'
+    | '/api/public/revenuecat'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -170,8 +211,12 @@ export interface FileRouteTypes {
     | '/menu'
     | '/more'
     | '/orders'
+    | '/payments'
     | '/promotions'
     | '/restaurant'
+    | '/staff'
+    | '/subscription'
+    | '/api/public/revenuecat'
   id:
     | '__root__'
     | '/'
@@ -186,8 +231,12 @@ export interface FileRouteTypes {
     | '/_authenticated/menu'
     | '/_authenticated/more'
     | '/_authenticated/orders'
+    | '/_authenticated/payments'
     | '/_authenticated/promotions'
     | '/_authenticated/restaurant'
+    | '/_authenticated/staff'
+    | '/_authenticated/subscription'
+    | '/api/public/revenuecat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -196,6 +245,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicRevenuecatRoute: typeof ApiPublicRevenuecatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -284,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payments': {
+      id: '/_authenticated/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof AuthenticatedPaymentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/promotions': {
       id: '/_authenticated/promotions'
       path: '/promotions'
@@ -298,6 +355,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRestaurantRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/staff': {
+      id: '/_authenticated/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AuthenticatedStaffRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/revenuecat': {
+      id: '/api/public/revenuecat'
+      path: '/api/public/revenuecat'
+      fullPath: '/api/public/revenuecat'
+      preLoaderRoute: typeof ApiPublicRevenuecatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,8 +387,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedMoreRoute: typeof AuthenticatedMoreRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
   AuthenticatedRestaurantRoute: typeof AuthenticatedRestaurantRoute
+  AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
+  AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -321,8 +402,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedMoreRoute: AuthenticatedMoreRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
   AuthenticatedRestaurantRoute: AuthenticatedRestaurantRoute,
+  AuthenticatedStaffRoute: AuthenticatedStaffRoute,
+  AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -334,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicRevenuecatRoute: ApiPublicRevenuecatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

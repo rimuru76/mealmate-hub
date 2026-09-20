@@ -41,10 +41,19 @@ function StaffPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("restaurant_members")
-        .select("id, role, is_active, user_id, created_at, profiles(full_name)")
+        .select("id, role, is_active, user_id, created_at")
         .eq("restaurant_id", restaurantId!);
       if (error) throw error;
-      return data ?? [];
+      const ids = (data ?? []).map((m) => m.user_id);
+      const names = new Map<string, string>();
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", ids);
+        for (const p of profiles ?? []) names.set(p.id, p.full_name ?? "Team member");
+      }
+      return (data ?? []).map((m) => ({ ...m, full_name: names.get(m.user_id) ?? "Team member" }));
     },
   });
 
@@ -130,7 +139,7 @@ function StaffPage() {
           <article key={m.id} className="surface-card flex items-center justify-between rounded-3xl p-4">
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-semibold">
-                {(m.profiles as { full_name: string | null } | null)?.full_name ?? "Team member"}
+                {m.full_name}
               </p>
               <p className="text-xs capitalize text-muted-foreground">
                 {m.role} · joined {shortDate(m.created_at)}
