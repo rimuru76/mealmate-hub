@@ -19,6 +19,56 @@ import { useWorkspace } from "@/lib/workspace";
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 type Hours = Record<string, { open: string; close: string; closed: boolean }>;
 
+type FormState = {
+  name: string;
+  description: string;
+  phone: string;
+  email: string;
+  website: string;
+  address: string;
+  city: string;
+  province: string;
+  country: string;
+  cuisine: string;
+  latitude: string;
+  longitude: string;
+  minimum_order: string;
+  prep_time_minutes: string;
+};
+
+const emptyForm: FormState = {
+  name: "",
+  description: "",
+  phone: "",
+  email: "",
+  website: "",
+  address: "",
+  city: "",
+  province: "",
+  country: "",
+  cuisine: "",
+  latitude: "",
+  longitude: "",
+  minimum_order: "0",
+  prep_time_minutes: "20",
+};
+
+const FIELDS: [Exclude<keyof FormState, "description">, string][] = [
+  ["name", "Restaurant name"],
+  ["cuisine", "Cuisine"],
+  ["phone", "Phone"],
+  ["email", "Email"],
+  ["website", "Website"],
+  ["address", "Address"],
+  ["city", "City"],
+  ["province", "Province"],
+  ["country", "Country"],
+  ["latitude", "GPS latitude"],
+  ["longitude", "GPS longitude"],
+  ["minimum_order", "Minimum order (R)"],
+  ["prep_time_minutes", "Estimated prep time (min)"],
+];
+
 export const Route = createFileRoute("/_authenticated/restaurant")({
   head: () => ({
     meta: [
@@ -34,7 +84,7 @@ export const Route = createFileRoute("/_authenticated/restaurant")({
 function RestaurantPage() {
   const { restaurant, isManager, refresh } = useWorkspace();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<FormState>({ ...emptyForm });
   const [flags, setFlags] = useState({ delivery: true, pickup: true });
   const [hours, setHours] = useState<Hours>({});
   const [logo, setLogo] = useState<File | null>(null);
@@ -163,26 +213,12 @@ function RestaurantPage() {
       </section>
 
       <fieldset disabled={!isManager} className="space-y-4">
-        {[
-          ["name", "Restaurant name"],
-          ["cuisine", "Cuisine"],
-          ["phone", "Phone"],
-          ["email", "Email"],
-          ["website", "Website"],
-          ["address", "Address"],
-          ["city", "City"],
-          ["province", "Province"],
-          ["country", "Country"],
-          ["latitude", "GPS latitude"],
-          ["longitude", "GPS longitude"],
-          ["minimum_order", "Minimum order (R)"],
-          ["prep_time_minutes", "Estimated prep time (min)"],
-        ].map(([key, label]) => (
+        {FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
             <Input
               className="h-12 rounded-xl"
-              value={form[key] ?? ""}
+              value={form[key]}
               onChange={(e) => setForm({ ...form, [key]: e.target.value })}
             />
           </div>
@@ -193,7 +229,7 @@ function RestaurantPage() {
           <Textarea
             rows={4}
             className="rounded-xl"
-            value={form.description ?? ""}
+            value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
