@@ -108,7 +108,7 @@ function SettingsPage() {
 
   return (
     <div className="pb-8">
-      <PageHeader title="Settings" subtitle={email ?? undefined} />
+      <PageHeader title="Settings" subtitle={email ?? ""} />
 
       <section className="surface-card mb-4 space-y-4 rounded-3xl p-4">
         <p className="font-display text-sm font-semibold">Your profile</p>
