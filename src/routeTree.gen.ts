@@ -21,6 +21,7 @@ import { Route as AuthenticatedBillingDiagnosticsRouteImport } from './routes/_a
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedMoreRouteImport } from './routes/_authenticated/more'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -92,6 +93,11 @@ const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMenuRoute = AuthenticatedMenuRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/insights': typeof AuthenticatedInsightsRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/more': typeof AuthenticatedMoreRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/insights': typeof AuthenticatedInsightsRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/more': typeof AuthenticatedMoreRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/more': typeof AuthenticatedMoreRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/insights'
     | '/menu'
     | '/more'
     | '/notifications'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/branches'
     | '/customers'
     | '/dashboard'
+    | '/insights'
     | '/menu'
     | '/more'
     | '/notifications'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/_authenticated/branches'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/insights'
     | '/_authenticated/menu'
     | '/_authenticated/more'
     | '/_authenticated/notifications'
@@ -408,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/insights': {
+      id: '/_authenticated/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof AuthenticatedInsightsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/menu': {
       id: '/_authenticated/menu'
       path: '/menu'
@@ -503,6 +522,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedMoreRoute: typeof AuthenticatedMoreRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
@@ -524,6 +544,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedMoreRoute: AuthenticatedMoreRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
