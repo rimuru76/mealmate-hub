@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CreditCard,
   LifeBuoy,
+  LineChart,
   LogOut,
   Settings,
   Shield,
