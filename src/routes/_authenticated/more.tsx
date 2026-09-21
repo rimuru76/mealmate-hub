@@ -45,6 +45,7 @@ function More() {
     { to: "/customers", label: "Customers", icon: Users, show: isManager },
     { to: "/promotions", label: "Promotions", icon: TicketPercent, show: isManager },
     { to: "/analytics", label: "Analytics", icon: BarChart3, show: isManager },
+    { to: "/insights", label: "Performance insights", icon: LineChart, show: isManager },
     { to: "/staff", label: "Staff", icon: Users, show: isManager },
     { to: "/payments", label: "Payments", icon: Wallet, show: isManager },
     { to: "/subscription", label: "Subscription", icon: CreditCard, show: isManager },
