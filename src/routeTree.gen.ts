@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiPricingRouteImport } from './routes/_authenticated/ai-pricing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedBillingDiagnosticsRouteImport } from './routes/_authenticated/billing-diagnostics'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -72,6 +73,12 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBillingDiagnosticsRoute =
+  AuthenticatedBillingDiagnosticsRouteImport.update({
+    id: '/billing-diagnostics',
+    path: '/billing-diagnostics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
   id: '/branches',
   path: '/branches',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-pricing': typeof AuthenticatedAiPricingRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/billing-diagnostics': typeof AuthenticatedBillingDiagnosticsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-pricing': typeof AuthenticatedAiPricingRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/billing-diagnostics': typeof AuthenticatedBillingDiagnosticsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -208,6 +217,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai-pricing': typeof AuthenticatedAiPricingRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/billing-diagnostics': typeof AuthenticatedBillingDiagnosticsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai-pricing'
     | '/analytics'
+    | '/billing-diagnostics'
     | '/branches'
     | '/customers'
     | '/dashboard'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai-pricing'
     | '/analytics'
+    | '/billing-diagnostics'
     | '/branches'
     | '/customers'
     | '/dashboard'
@@ -283,6 +295,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ai-pricing'
     | '/_authenticated/analytics'
+    | '/_authenticated/billing-diagnostics'
     | '/_authenticated/branches'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/billing-diagnostics': {
+      id: '/_authenticated/billing-diagnostics'
+      path: '/billing-diagnostics'
+      fullPath: '/billing-diagnostics'
+      preLoaderRoute: typeof AuthenticatedBillingDiagnosticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/branches': {
@@ -479,6 +499,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiPricingRoute: typeof AuthenticatedAiPricingRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedBillingDiagnosticsRoute: typeof AuthenticatedBillingDiagnosticsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -499,6 +520,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiPricingRoute: AuthenticatedAiPricingRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedBillingDiagnosticsRoute: AuthenticatedBillingDiagnosticsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
