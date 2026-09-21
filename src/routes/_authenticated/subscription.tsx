@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, RefreshCw, ShieldCheck } from "lucide-react";
+import { Check, ChevronRight, RefreshCw, ShieldCheck, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -166,6 +166,19 @@ function SubscriptionPage() {
           );
         })}
       </div>
+
+      {isManager ? (
+        <Link
+          to="/billing-diagnostics"
+          className="tap-target mt-4 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-4 text-sm font-medium"
+        >
+          <span className="flex items-center gap-2">
+            <Stethoscope className="size-4 text-muted-foreground" />
+            Billing diagnostics
+          </span>
+          <ChevronRight className="size-4 text-muted-foreground" />
+        </Link>
+      ) : null}
 
       <p className="mt-5 flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0" />
