@@ -209,7 +209,11 @@ function BillingDiagnosticsPage() {
                     </div>
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <Line label="Entitlement" value={plan.entitlement ?? "—"} small />
-                      <Line label="Product" value={plan.product_id ?? "Set in RevenueCat"} small />
+                      <Line
+                        label="Product"
+                        value={matched?.productId ?? "Set in RevenueCat"}
+                        small
+                      />
                       <Line
                         label="On this account"
                         value={matched ? (matched.active ? "Active" : "Lapsed") : "Not purchased"}

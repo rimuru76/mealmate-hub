@@ -129,7 +129,7 @@ export const billingDiagnostics = createServerFn({ method: "POST" })
     // Plan catalogue configured in the backend (source for entitlement mapping).
     const { data: plans } = await supabase
       .from("plans")
-      .select("id, name, price_zar, entitlement, product_id, is_active")
+      .select("id, name, price_zar, entitlement, is_active")
       .order("position");
 
     // Webhook health: recent events recorded for this restaurant.
