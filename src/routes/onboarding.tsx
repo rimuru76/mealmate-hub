@@ -210,7 +210,10 @@ function Onboarding() {
         const { error: cleanupError } = await supabase.from("restaurants").delete().eq("id", createdId);
         if (cleanupError) console.error("[v0] Failed to clean up onboarding restaurant", { createdId, cleanupError });
       }
-      toast.error(error instanceof Error ? error.message : `Restaurant creation failed: ${String(error)}`);
+      const message = error instanceof Error ? error.message : `Restaurant creation failed: ${String(error)}`;
+      toast.error(message.includes("pending invitation for another restaurant")
+        ? "This email already has a pending invitation for another restaurant. Use another owner email or manage the existing invitation."
+        : message);
     } finally {
       setBusy(false);
     }
