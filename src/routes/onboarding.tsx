@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImage } from "@/lib/storage";
+import { RESTAURANT_ASSETS_BUCKET, uploadImage } from "@/lib/storage";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ const CATEGORIES = [
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { session, loading, refresh, memberships } = useWorkspace();
+  const { session, loading, refresh, memberships, isPlatformAdmin } = useWorkspace();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
@@ -49,6 +49,7 @@ function Onboarding() {
   const [form, setForm] = useState({
     name: "",
     owner_name: "",
+    owner_email: "",
     phone: "",
     email: "",
     category: CATEGORIES[0]!,
@@ -76,48 +77,143 @@ function Onboarding() {
   async function submit() {
     if (!session) return;
     setBusy(true);
+    let createdId: string | null = null;
+    const uploadedPaths: string[] = [];
+    const describeError = (error: unknown) => {
+      if (error && typeof error === "object") {
+        const value = error as { message?: string; code?: string; details?: string; hint?: string };
+        return [value.message, value.code ? `code ${value.code}` : "", value.details, value.hint]
+          .filter(Boolean)
+          .join(" — ");
+      }
+      return error instanceof Error ? error.message : String(error);
+    };
+    const fail = (operation: string, error: unknown): never => {
+      const message = `Restaurant creation failed during ${operation}: ${describeError(error)}`;
+      console.error("[v0] MealMate onboarding operation failed", { operation, error });
+      throw new Error(message);
+    };
     try {
-      const { data: created, error } = await supabase
-        .from("restaurants")
-        .insert({
-          owner_id: session.user.id,
-          name: form.name.trim(),
-          owner_name: form.owner_name.trim(),
-          phone: form.phone.trim(),
-          email: form.email.trim(),
-          category: form.category,
-          description: form.description.trim() || null,
-          address: form.address.trim(),
-          city: form.city.trim(),
-          province: form.province.trim(),
-          country: form.country.trim(),
-          onboarding_complete: true,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      const patch: { logo_url?: string; cover_url?: string } = {};
-      if (logo) patch.logo_url = await uploadImage("restaurant-assets", created.id, logo, "logo");
-      if (cover) patch.cover_url = await uploadImage("restaurant-assets", created.id, cover, "cover");
-      if (Object.keys(patch).length) {
-        await supabase.from("restaurants").update(patch).eq("id", created.id);
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!currentUser.user || currentUser.user.id !== session.user.id) {
+        throw new Error("Your Supabase session expired. Please sign in again.");
       }
 
-      await supabase.from("menu_categories").insert(
+      const ownerEmail = (isPlatformAdmin ? form.owner_email : session.user.email ?? form.email).trim().toLowerCase();
+      if (!ownerEmail || !ownerEmail.includes("@")) {
+        throw new Error("A valid restaurant owner email is required.");
+      }
+
+      let created: typeof form & { id: string; owner_id: string | null; logo_url?: string | null; cover_url?: string | null };
+      if (isPlatformAdmin) {
+        const { data, error } = await supabase.rpc("create_restaurant_owner_invite" as never, {
+          p_name: form.name.trim(),
+          p_owner_name: form.owner_name.trim(),
+          p_owner_email: ownerEmail,
+          p_phone: form.phone.trim(),
+          p_contact_email: form.email.trim(),
+          p_category: form.category,
+          p_description: form.description.trim(),
+          p_address: form.address.trim(),
+          p_city: form.city.trim(),
+          p_province: form.province.trim(),
+          p_country: form.country.trim(),
+        } as never);
+        if (error) fail("restaurant creation RPC", error);
+        if (!data) fail("restaurant creation RPC", new Error("Restaurant creation returned no record."));
+        created = data as typeof created;
+        createdId = created.id;
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant creation RPC", restaurantId: createdId });
+      } else {
+        const { data, error } = await supabase
+          .from("restaurants")
+          .insert({
+            owner_id: session.user.id,
+            owner_email: ownerEmail,
+            name: form.name.trim(),
+            owner_name: form.owner_name.trim(),
+            phone: form.phone.trim(),
+            email: form.email.trim(),
+            category: form.category,
+            description: form.description.trim() || null,
+            address: form.address.trim(),
+            city: form.city.trim(),
+            province: form.province.trim(),
+            country: form.country.trim(),
+            onboarding_complete: true,
+          })
+          .select()
+          .single();
+        if (error) fail("restaurant INSERT", error);
+        created = data as typeof created;
+        createdId = created.id;
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant INSERT", restaurantId: createdId });
+      }
+
+      const patch: { logo_url?: string; cover_url?: string } = {};
+      if (logo) {
+        try {
+          patch.logo_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, logo, "logo");
+          uploadedPaths.push(patch.logo_url);
+          console.info("[v0] MealMate onboarding operation succeeded", { operation: "logo Storage upload", bucket: RESTAURANT_ASSETS_BUCKET, restaurantId: created.id });
+        } catch (error) {
+          fail("logo Storage upload", error);
+        }
+      }
+      if (cover) {
+        try {
+          patch.cover_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, cover, "cover");
+          uploadedPaths.push(patch.cover_url);
+          console.info("[v0] MealMate onboarding operation succeeded", { operation: "cover Storage upload", bucket: RESTAURANT_ASSETS_BUCKET, restaurantId: created.id });
+        } catch (error) {
+          fail("cover Storage upload", error);
+        }
+      }
+      if (Object.keys(patch).length) {
+        const { error: brandingError } = await supabase
+          .from("restaurants")
+          .update(patch)
+          .eq("id", created.id);
+        if (brandingError) fail("restaurant branding update", brandingError);
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant branding update", restaurantId: created.id });
+      }
+
+      const { error: categoriesError } = await supabase.from("menu_categories").insert(
         ["Breakfast", "Burgers", "Pizza", "Chicken", "Sides", "Drinks", "Desserts"].map(
           (name, i) => ({ restaurant_id: created.id, name, position: i }),
         ),
       );
+      if (categoriesError) fail("menu/category creation", categoriesError);
+      console.info("[v0] MealMate onboarding operation succeeded", { operation: "menu/category creation", restaurantId: created.id });
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem("mmp.active_restaurant", created.id);
       }
       refresh();
-      toast.success("Restaurant created. Choose your plan to activate everything.");
-      navigate({ to: "/subscription" });
+      toast.success(
+        isPlatformAdmin
+          ? "Restaurant created. Owner access is active with no subscription required."
+          : "Restaurant created. Choose your plan to activate everything.",
+      );
+      navigate({ to: isPlatformAdmin ? "/restaurant" : "/subscription" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't create your restaurant.");
+      console.error("[v0] MealMate restaurant creation failed", { restaurantId: createdId, error });
+      for (const reference of uploadedPaths.reverse()) {
+        const [bucket, ...parts] = reference.split("/");
+        if (bucket && parts.length) {
+          const { error: cleanupError } = await supabase.storage.from(bucket).remove([parts.join("/")]);
+          if (cleanupError) console.error("[v0] Failed to clean up onboarding upload", { reference, cleanupError });
+        }
+      }
+      if (createdId) {
+        const { error: cleanupError } = await supabase.from("restaurants").delete().eq("id", createdId);
+        if (cleanupError) console.error("[v0] Failed to clean up onboarding restaurant", { createdId, cleanupError });
+      }
+      const message = error instanceof Error ? error.message : `Restaurant creation failed: ${String(error)}`;
+      toast.error(message.includes("pending invitation for another restaurant")
+        ? "This email already has a pending invitation for another restaurant. Use another owner email or manage the existing invitation."
+        : message);
     } finally {
       setBusy(false);
     }
@@ -177,6 +273,18 @@ function Onboarding() {
               <Field label="Owner name">
                 <Input value={form.owner_name} onChange={(e) => update("owner_name", e.target.value)} className="h-12 rounded-xl" />
               </Field>
+              {isPlatformAdmin ? (
+                <Field label="Restaurant owner email">
+                  <Input
+                    value={form.owner_email}
+                    onChange={(e) => update("owner_email", e.target.value)}
+                    type="email"
+                    placeholder="owner@example.com"
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </Field>
+              ) : null}
               <Field label="Phone">
                 <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} inputMode="tel" className="h-12 rounded-xl" />
               </Field>

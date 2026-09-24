@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { ShieldAlert } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminPage() {
   const { isPlatformAdmin } = useWorkspace();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -97,7 +98,19 @@ function AdminPage() {
 
   return (
     <div className="pb-8">
-      <PageHeader title="Taz admin" subtitle="Platform-wide view" />
+      <PageHeader
+        title="Taz admin"
+        subtitle="Platform-wide view"
+        action={
+          <Button
+            className="tap-target shrink-0 rounded-2xl px-3 text-xs font-semibold shadow-glow"
+            onClick={() => navigate({ to: "/onboarding" })}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            <span>+ Add Restaurant</span>
+          </Button>
+        }
+      />
 
       <div className="mb-5 grid grid-cols-2 gap-3">
         <Metric label="Restaurants" value={String(data.restaurants.length)} />
