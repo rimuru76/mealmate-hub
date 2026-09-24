@@ -41,7 +41,7 @@ const CATEGORIES = [
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { session, loading, refresh, memberships } = useWorkspace();
+  const { session, loading, refresh, memberships, isPlatformAdmin } = useWorkspace();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
@@ -77,6 +77,12 @@ function Onboarding() {
     if (!session) return;
     setBusy(true);
     try {
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!currentUser.user || currentUser.user.id !== session.user.id) {
+        throw new Error("Your Supabase session expired. Please sign in again.");
+      }
+
       const { data: created, error } = await supabase
         .from("restaurants")
         .insert({
@@ -101,21 +107,30 @@ function Onboarding() {
       if (logo) patch.logo_url = await uploadImage("restaurant-assets", created.id, logo, "logo");
       if (cover) patch.cover_url = await uploadImage("restaurant-assets", created.id, cover, "cover");
       if (Object.keys(patch).length) {
-        await supabase.from("restaurants").update(patch).eq("id", created.id);
+        const { error: brandingError } = await supabase
+          .from("restaurants")
+          .update(patch)
+          .eq("id", created.id);
+        if (brandingError) throw brandingError;
       }
 
-      await supabase.from("menu_categories").insert(
+      const { error: categoriesError } = await supabase.from("menu_categories").insert(
         ["Breakfast", "Burgers", "Pizza", "Chicken", "Sides", "Drinks", "Desserts"].map(
           (name, i) => ({ restaurant_id: created.id, name, position: i }),
         ),
       );
+      if (categoriesError) throw categoriesError;
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem("mmp.active_restaurant", created.id);
       }
       refresh();
-      toast.success("Restaurant created. Choose your plan to activate everything.");
-      navigate({ to: "/subscription" });
+      toast.success(
+        isPlatformAdmin
+          ? "Restaurant created. Owner access is active with no subscription required."
+          : "Restaurant created. Choose your plan to activate everything.",
+      );
+      navigate({ to: isPlatformAdmin ? "/restaurant" : "/subscription" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't create your restaurant.");
     } finally {
