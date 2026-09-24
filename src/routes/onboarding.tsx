@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImage } from "@/lib/storage";
+import { RESTAURANT_ASSETS_BUCKET, uploadImage } from "@/lib/storage";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 
@@ -104,8 +104,8 @@ function Onboarding() {
       if (error) throw error;
 
       const patch: { logo_url?: string; cover_url?: string } = {};
-      if (logo) patch.logo_url = await uploadImage("restaurant-assets", created.id, logo, "logo");
-      if (cover) patch.cover_url = await uploadImage("restaurant-assets", created.id, cover, "cover");
+      if (logo) patch.logo_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, logo, "logo");
+      if (cover) patch.cover_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, cover, "cover");
       if (Object.keys(patch).length) {
         const { error: brandingError } = await supabase
           .from("restaurants")

@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const MAX_DIMENSION = 1280;
+export const RESTAURANT_ASSETS_BUCKET = "restaurant-assets" as const;
+export const MENU_IMAGES_BUCKET = "menu-images" as const;
 
 /** Compress + resize an image in the browser before upload. */
 export async function compressImage(file: File): Promise<Blob> {
@@ -26,7 +28,7 @@ export async function compressImage(file: File): Promise<Blob> {
 }
 
 export async function uploadImage(
-  bucket: "restaurant-assets" | "menu-images",
+  bucket: typeof RESTAURANT_ASSETS_BUCKET | typeof MENU_IMAGES_BUCKET,
   restaurantId: string,
   file: File,
   prefix = "img",
