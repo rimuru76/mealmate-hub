@@ -54,6 +54,8 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) {
+          const { error: claimError } = await supabase.rpc("claim_restaurant_owner_invites" as never, undefined as never);
+          if (claimError) throw claimError;
           navigate({ to: "/onboarding" });
         } else {
           toast.success("Check your inbox to verify your email, then sign in.");
@@ -65,6 +67,8 @@ function AuthPage() {
           password,
         });
         if (error) throw error;
+        const { error: claimError } = await supabase.rpc("claim_restaurant_owner_invites" as never, undefined as never);
+        if (claimError) throw claimError;
         navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {

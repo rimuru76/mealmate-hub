@@ -49,6 +49,7 @@ function Onboarding() {
   const [form, setForm] = useState({
     name: "",
     owner_name: "",
+    owner_email: "",
     phone: "",
     email: "",
     category: CATEGORIES[0]!,
@@ -83,25 +84,52 @@ function Onboarding() {
         throw new Error("Your Supabase session expired. Please sign in again.");
       }
 
-      const { data: created, error } = await supabase
-        .from("restaurants")
-        .insert({
-          owner_id: session.user.id,
-          name: form.name.trim(),
-          owner_name: form.owner_name.trim(),
-          phone: form.phone.trim(),
-          email: form.email.trim(),
-          category: form.category,
-          description: form.description.trim() || null,
-          address: form.address.trim(),
-          city: form.city.trim(),
-          province: form.province.trim(),
-          country: form.country.trim(),
-          onboarding_complete: true,
-        })
-        .select()
-        .single();
-      if (error) throw error;
+      const ownerEmail = (isPlatformAdmin ? form.owner_email : session.user.email ?? form.email).trim().toLowerCase();
+      if (!ownerEmail || !ownerEmail.includes("@")) {
+        throw new Error("A valid restaurant owner email is required.");
+      }
+
+      let created: typeof form & { id: string; owner_id: string | null; logo_url?: string | null; cover_url?: string | null };
+      if (isPlatformAdmin) {
+        const { data, error } = await supabase.rpc("create_restaurant_owner_invite" as never, {
+          p_name: form.name.trim(),
+          p_owner_name: form.owner_name.trim(),
+          p_owner_email: ownerEmail,
+          p_phone: form.phone.trim(),
+          p_contact_email: form.email.trim(),
+          p_category: form.category,
+          p_description: form.description.trim(),
+          p_address: form.address.trim(),
+          p_city: form.city.trim(),
+          p_province: form.province.trim(),
+          p_country: form.country.trim(),
+        } as never);
+        if (error) throw error;
+        if (!data) throw new Error("Restaurant creation returned no record.");
+        created = data as typeof created;
+      } else {
+        const { data, error } = await supabase
+          .from("restaurants")
+          .insert({
+            owner_id: session.user.id,
+            owner_email: ownerEmail,
+            name: form.name.trim(),
+            owner_name: form.owner_name.trim(),
+            phone: form.phone.trim(),
+            email: form.email.trim(),
+            category: form.category,
+            description: form.description.trim() || null,
+            address: form.address.trim(),
+            city: form.city.trim(),
+            province: form.province.trim(),
+            country: form.country.trim(),
+            onboarding_complete: true,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        created = data as typeof created;
+      }
 
       const patch: { logo_url?: string; cover_url?: string } = {};
       if (logo) patch.logo_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, logo, "logo");
@@ -192,6 +220,18 @@ function Onboarding() {
               <Field label="Owner name">
                 <Input value={form.owner_name} onChange={(e) => update("owner_name", e.target.value)} className="h-12 rounded-xl" />
               </Field>
+              {isPlatformAdmin ? (
+                <Field label="Restaurant owner email">
+                  <Input
+                    value={form.owner_email}
+                    onChange={(e) => update("owner_email", e.target.value)}
+                    type="email"
+                    placeholder="owner@example.com"
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </Field>
+              ) : null}
               <Field label="Phone">
                 <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} inputMode="tel" className="h-12 rounded-xl" />
               </Field>
