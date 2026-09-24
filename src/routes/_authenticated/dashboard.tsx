@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
   BarChart3,
@@ -49,7 +49,8 @@ type OrderRow = {
 };
 
 function Dashboard() {
-  const { restaurant, activeBranchId, role } = useWorkspace();
+  const { restaurant, activeBranchId, role, isPlatformAdmin } = useWorkspace();
+  const navigate = useNavigate();
   const restaurantId = restaurant?.id ?? null;
   const canSeeMoney = role !== "staff";
 
@@ -149,9 +150,21 @@ function Dashboard() {
 
   return (
     <div className="pb-8">
-      <header className="mb-5">
-        <p className="text-sm text-muted-foreground">{greeting()},</p>
-        <h1 className="font-display text-2xl font-semibold">{restaurant?.name ?? "Partner"}</h1>
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting()},</p>
+          <h1 className="font-display text-2xl font-semibold">{restaurant?.name ?? "Partner"}</h1>
+        </div>
+        {isPlatformAdmin ? (
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/onboarding" })}
+            className="tap-target inline-flex shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-glow transition-transform hover:scale-[1.02]"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            <span>+ Add Restaurant</span>
+          </button>
+        ) : null}
         <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
           <span className="pulse-live size-2 rounded-full bg-success" />
           Live · {pending.length} order{pending.length === 1 ? "" : "s"} in progress
