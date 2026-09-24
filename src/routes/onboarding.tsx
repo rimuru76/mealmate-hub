@@ -77,6 +77,22 @@ function Onboarding() {
   async function submit() {
     if (!session) return;
     setBusy(true);
+    let createdId: string | null = null;
+    const uploadedPaths: string[] = [];
+    const describeError = (error: unknown) => {
+      if (error && typeof error === "object") {
+        const value = error as { message?: string; code?: string; details?: string; hint?: string };
+        return [value.message, value.code ? `code ${value.code}` : "", value.details, value.hint]
+          .filter(Boolean)
+          .join(" — ");
+      }
+      return error instanceof Error ? error.message : String(error);
+    };
+    const fail = (operation: string, error: unknown): never => {
+      const message = `Restaurant creation failed during ${operation}: ${describeError(error)}`;
+      console.error("[v0] MealMate onboarding operation failed", { operation, error });
+      throw new Error(message);
+    };
     try {
       const { data: currentUser, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
@@ -104,9 +120,11 @@ function Onboarding() {
           p_province: form.province.trim(),
           p_country: form.country.trim(),
         } as never);
-        if (error) throw error;
-        if (!data) throw new Error("Restaurant creation returned no record.");
+        if (error) fail("restaurant creation RPC", error);
+        if (!data) fail("restaurant creation RPC", new Error("Restaurant creation returned no record."));
         created = data as typeof created;
+        createdId = created.id;
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant creation RPC", restaurantId: createdId });
       } else {
         const { data, error } = await supabase
           .from("restaurants")
@@ -127,19 +145,38 @@ function Onboarding() {
           })
           .select()
           .single();
-        if (error) throw error;
+        if (error) fail("restaurant INSERT", error);
         created = data as typeof created;
+        createdId = created.id;
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant INSERT", restaurantId: createdId });
       }
 
       const patch: { logo_url?: string; cover_url?: string } = {};
-      if (logo) patch.logo_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, logo, "logo");
-      if (cover) patch.cover_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, cover, "cover");
+      if (logo) {
+        try {
+          patch.logo_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, logo, "logo");
+          uploadedPaths.push(patch.logo_url);
+          console.info("[v0] MealMate onboarding operation succeeded", { operation: "logo Storage upload", bucket: RESTAURANT_ASSETS_BUCKET, restaurantId: created.id });
+        } catch (error) {
+          fail("logo Storage upload", error);
+        }
+      }
+      if (cover) {
+        try {
+          patch.cover_url = await uploadImage(RESTAURANT_ASSETS_BUCKET, created.id, cover, "cover");
+          uploadedPaths.push(patch.cover_url);
+          console.info("[v0] MealMate onboarding operation succeeded", { operation: "cover Storage upload", bucket: RESTAURANT_ASSETS_BUCKET, restaurantId: created.id });
+        } catch (error) {
+          fail("cover Storage upload", error);
+        }
+      }
       if (Object.keys(patch).length) {
         const { error: brandingError } = await supabase
           .from("restaurants")
           .update(patch)
           .eq("id", created.id);
-        if (brandingError) throw brandingError;
+        if (brandingError) fail("restaurant branding update", brandingError);
+        console.info("[v0] MealMate onboarding operation succeeded", { operation: "restaurant branding update", restaurantId: created.id });
       }
 
       const { error: categoriesError } = await supabase.from("menu_categories").insert(
@@ -147,7 +184,8 @@ function Onboarding() {
           (name, i) => ({ restaurant_id: created.id, name, position: i }),
         ),
       );
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) fail("menu/category creation", categoriesError);
+      console.info("[v0] MealMate onboarding operation succeeded", { operation: "menu/category creation", restaurantId: created.id });
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem("mmp.active_restaurant", created.id);
@@ -160,7 +198,19 @@ function Onboarding() {
       );
       navigate({ to: isPlatformAdmin ? "/restaurant" : "/subscription" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't create your restaurant.");
+      console.error("[v0] MealMate restaurant creation failed", { restaurantId: createdId, error });
+      for (const reference of uploadedPaths.reverse()) {
+        const [bucket, ...parts] = reference.split("/");
+        if (bucket && parts.length) {
+          const { error: cleanupError } = await supabase.storage.from(bucket).remove([parts.join("/")]);
+          if (cleanupError) console.error("[v0] Failed to clean up onboarding upload", { reference, cleanupError });
+        }
+      }
+      if (createdId) {
+        const { error: cleanupError } = await supabase.from("restaurants").delete().eq("id", createdId);
+        if (cleanupError) console.error("[v0] Failed to clean up onboarding restaurant", { createdId, cleanupError });
+      }
+      toast.error(error instanceof Error ? error.message : `Restaurant creation failed: ${String(error)}`);
     } finally {
       setBusy(false);
     }
