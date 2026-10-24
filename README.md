@@ -14,8 +14,9 @@ The consumer app at [mealsmates.site](https://mealsmates.site) uses Firebase pro
    project. Set server-only `FIREBASE_PROJECT_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON`
    from the existing consumer project. Split `FIREBASE_CLIENT_EMAIL` and
    `FIREBASE_PRIVATE_KEY`, or Application Default Credentials, are also supported.
-   Never use a `VITE_` prefix for a service account. Both `default` and `(default)`
-   database overrides resolve to the standard Firestore database.
+   Never use a `VITE_` prefix for a service account. Database IDs are used exactly as configured: this project uses the named
+   `default` database. `(default)` is a different database; leave the override unset
+   for the standard database used by the local emulators.
 2. Enable Email/Password and Google sign-in in Firebase Authentication. Add the
    partner domain to Authentication → Settings → Authorized domains. Both apps use
    the same identities; users still sign in separately on each domain.

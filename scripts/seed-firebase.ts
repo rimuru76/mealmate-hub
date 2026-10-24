@@ -16,7 +16,12 @@ const app = initializeApp({
   credential:
     clientEmail && privateKey ? cert({ projectId, clientEmail, privateKey }) : applicationDefault(),
 });
-const db = getFirestore(app);
+const db = getFirestore(
+  app,
+  process.env["FIREBASE_FIRESTORE_DATABASE_ID"] ||
+    process.env["VITE_FIREBASE_FIRESTORE_DATABASE_ID"] ||
+    "(default)",
+);
 const plans = [
   {
     id: "starter",

@@ -39,9 +39,9 @@ export function getFirebaseAdmin() {
     auth: getAuth(app),
     db: getFirestore(
       app,
-      process.env["FIREBASE_FIRESTORE_DATABASE_ID"] === "default"
-        ? "(default)"
-        : process.env["FIREBASE_FIRESTORE_DATABASE_ID"] || "(default)",
+      process.env["FIREBASE_FIRESTORE_DATABASE_ID"] ||
+        process.env["VITE_FIREBASE_FIRESTORE_DATABASE_ID"] ||
+        "(default)",
     ),
     app,
   };
