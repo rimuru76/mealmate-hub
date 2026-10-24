@@ -4,7 +4,7 @@ import { Lock, Receipt } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, Spinner } from "@/components/states";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -12,7 +12,10 @@ export const Route = createFileRoute("/_authenticated/payments")({
   head: () => ({
     meta: [
       { title: "Payments — MealMate Partners" },
-      { name: "description", content: "Revenue, pending amounts, invoices and subscription charges." },
+      {
+        name: "description",
+        content: "Revenue, pending amounts, invoices and subscription charges.",
+      },
       { property: "og:title", content: "Payments — MealMate Partners" },
       { property: "og:description", content: "Financial overview for your restaurant." },
     ],
@@ -29,12 +32,12 @@ function PaymentsPage() {
     enabled: !!restaurantId && isManager,
     queryFn: async () => {
       const [orders, invoices] = await Promise.all([
-        supabase
+        firebaseClient
           .from("orders")
           .select("total, status, payment_status, placed_at")
           .eq("restaurant_id", restaurantId!)
           .limit(2000),
-        supabase
+        firebaseClient
           .from("invoices")
           .select("*")
           .eq("restaurant_id", restaurantId!)
@@ -97,7 +100,10 @@ function PaymentsPage() {
       ) : (
         <div className="space-y-2">
           {(query.data?.invoices ?? []).map((inv) => (
-            <div key={inv.id} className="surface-card flex items-center justify-between rounded-2xl p-4">
+            <div
+              key={inv.id}
+              className="surface-card flex items-center justify-between rounded-2xl p-4"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{inv.reference}</p>
                 <p className="text-xs capitalize text-muted-foreground">

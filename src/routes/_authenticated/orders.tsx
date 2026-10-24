@@ -7,11 +7,11 @@ import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/AppShell";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { clockTime, currency, timeAgo } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/firebase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 type Order = Database["public"]["Tables"]["orders"]["Row"] & {
@@ -59,7 +59,10 @@ export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({
     meta: [
       { title: "Orders — MealMate Partners" },
-      { name: "description", content: "Accept, prepare and complete MealMate orders in real time." },
+      {
+        name: "description",
+        content: "Accept, prepare and complete MealMate orders in real time.",
+      },
       { property: "og:title", content: "Orders — MealMate Partners" },
       { property: "og:description", content: "Live order management for your restaurant." },
     ],
@@ -78,7 +81,7 @@ function Orders() {
     queryKey: ["orders", restaurantId, tab, activeBranchId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      let q = supabase
+      let q = firebaseClient
         .from("orders")
         .select(
           "*, order_items(id, name, quantity, total_price, notes, order_item_modifiers(id, name, price))",
@@ -98,7 +101,7 @@ function Orders() {
     queryKey: ["orders-new-count", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { count, error } = await firebaseClient
         .from("orders")
         .select("id", { count: "exact", head: true })
         .eq("restaurant_id", restaurantId!)
@@ -110,39 +113,22 @@ function Orders() {
 
   useEffect(() => {
     if (!restaurantId) return;
-    const channel = supabase
-      .channel(`orders-${restaurantId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-          filter: `restaurant_id=eq.${restaurantId}`,
-        },
-        (payload) => {
-          queryClient.invalidateQueries({ queryKey: ["orders", restaurantId] });
-          queryClient.invalidateQueries({ queryKey: ["orders-new-count", restaurantId] });
-          queryClient.invalidateQueries({ queryKey: ["dashboard-orders", restaurantId] });
-          if (payload.eventType === "INSERT") {
-            setFlash(true);
-            window.setTimeout(() => setFlash(false), 4000);
-            if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-              navigator.vibrate?.([120, 60, 120]);
-            }
-            toast.success("New order received");
-          }
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return firebaseClient.watch("orders", "restaurant_id", restaurantId, (payload) => {
+      queryClient.invalidateQueries({ queryKey: ["orders", restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ["orders-new-count", restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-orders", restaurantId] });
+      if (payload.eventType === "INSERT") {
+        setFlash(true);
+        window.setTimeout(() => setFlash(false), 4000);
+        navigator.vibrate?.([120, 60, 120]);
+        toast.success("New order received");
+      }
+    });
   }, [restaurantId, queryClient]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("orders")
         .update({
           status,
@@ -237,7 +223,9 @@ function Orders() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-display text-base font-semibold">{currency(Number(order.total))}</p>
+                <p className="font-display text-base font-semibold">
+                  {currency(Number(order.total))}
+                </p>
                 <p
                   className={cn(
                     "text-[11px] font-medium",
@@ -267,7 +255,9 @@ function Orders() {
                     <span>
                       {item.quantity}× {item.name}
                     </span>
-                    <span className="text-muted-foreground">{currency(Number(item.total_price))}</span>
+                    <span className="text-muted-foreground">
+                      {currency(Number(item.total_price))}
+                    </span>
                   </div>
                   {item.order_item_modifiers.length > 0 ? (
                     <p className="pl-5 text-xs text-muted-foreground">

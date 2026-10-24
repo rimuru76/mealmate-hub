@@ -18,12 +18,16 @@ export function SignedImage({
 
   useEffect(() => {
     let active = true;
+    let objectUrl: string | null = null;
     setUrl(null);
     signedUrl(reference).then((value) => {
+      if (value?.startsWith("blob:")) objectUrl = value;
       if (active) setUrl(value);
+      else if (objectUrl) URL.revokeObjectURL(objectUrl);
     });
     return () => {
       active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [reference]);
 

@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { timeAgo } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ function NotificationsPage() {
     queryKey: ["notifications", userId, restaurant?.id],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("notifications")
         .select("*")
         .order("created_at", { ascending: false })
@@ -54,7 +54,7 @@ function NotificationsPage() {
     queryKey: ["notification-prefs", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("notification_preferences")
         .select("*")
         .eq("user_id", userId!)
@@ -66,20 +66,22 @@ function NotificationsPage() {
 
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase
-      .channel(`notifications-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
     };
-  }, [userId, queryClient]);
+    const stopUser = firebaseClient.watch("notifications", "user_id", userId, invalidate);
+    const stopRestaurant = restaurant?.id
+      ? firebaseClient.watch("notifications", "restaurant_id", restaurant.id, invalidate)
+      : () => {};
+    return () => {
+      stopUser();
+      stopRestaurant();
+    };
+  }, [userId, restaurant?.id, queryClient]);
 
   const setPref = useMutation({
     mutationFn: async (patch: Record<string, boolean>) => {
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("notification_preferences")
         .upsert({ user_id: userId!, ...patch }, { onConflict: "user_id" });
       if (error) throw error;
@@ -89,7 +91,7 @@ function NotificationsPage() {
 
   const markRead = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("notifications")
         .update({ is_read: true })
         .eq("is_read", false);
@@ -103,7 +105,11 @@ function NotificationsPage() {
       <PageHeader
         title="Notifications"
         action={
-          <Button variant="secondary" className="tap-target rounded-2xl" onClick={() => markRead.mutate()}>
+          <Button
+            variant="secondary"
+            className="tap-target rounded-2xl"
+            onClick={() => markRead.mutate()}
+          >
             Mark all read
           </Button>
         }
@@ -145,7 +151,9 @@ function NotificationsPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium">{n.title}</p>
-              <span className="shrink-0 text-[11px] text-muted-foreground">{timeAgo(n.created_at)}</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                {timeAgo(n.created_at)}
+              </span>
             </div>
             {n.body ? <p className="mt-1 text-xs text-muted-foreground">{n.body}</p> : null}
           </article>

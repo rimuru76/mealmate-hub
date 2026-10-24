@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -27,14 +27,20 @@ function ResetPassword() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const code = new URLSearchParams(window.location.search).get("oobCode");
+    if (!code) {
+      setBusy(false);
+      toast.error("Open a valid password reset link from your email.");
+      return;
+    }
+    const { error } = await firebaseClient.auth.confirmPasswordReset(code, password);
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
     }
     toast.success("Password updated.");
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/auth" });
   }
 
   return (

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { useWorkspace } from "@/lib/workspace";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -39,12 +39,27 @@ function AuthPage() {
     if (!loading && session) navigate({ to: "/dashboard", replace: true });
   }, [loading, session, navigate]);
 
+  async function signInWithGoogle() {
+    setBusy(true);
+    try {
+      const { error } = await firebaseClient.auth.signInWithGoogle();
+      if (error) throw new Error(error.message);
+      const claim = await firebaseClient.rpc("claim_restaurant_owner_invites");
+      if (claim.error) throw new Error(claim.error.message);
+      navigate({ to: "/dashboard" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not sign in.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await firebaseClient.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -54,7 +69,10 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) {
-          const { error: claimError } = await supabase.rpc("claim_restaurant_owner_invites" as never, undefined as never);
+          const { error: claimError } = await firebaseClient.rpc(
+            "claim_restaurant_owner_invites" as never,
+            undefined as never,
+          );
           if (claimError) throw claimError;
           navigate({ to: "/onboarding" });
         } else {
@@ -62,16 +80,19 @@ function AuthPage() {
           setMode("signin");
         }
       } else if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await firebaseClient.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
         if (error) throw error;
-        const { error: claimError } = await supabase.rpc("claim_restaurant_owner_invites" as never, undefined as never);
+        const { error: claimError } = await firebaseClient.rpc(
+          "claim_restaurant_owner_invites" as never,
+          undefined as never,
+        );
         if (claimError) throw claimError;
         navigate({ to: "/dashboard" });
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        const { error } = await firebaseClient.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) throw error;
@@ -94,7 +115,9 @@ function AuthPage() {
             <ChefHat className="size-6 text-primary" strokeWidth={1.7} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">MealMate Partners</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              MealMate Partners
+            </p>
           </div>
         </div>
 
@@ -109,9 +132,20 @@ function AuthPage() {
           <p className="mt-2 text-center text-sm font-light text-muted-foreground">
             {mode === "forgot"
               ? "We'll email you a secure link to set a new password."
-              : "Use your restaurant email address."}
+              : "Use your existing MealMate account or your restaurant email."}
           </p>
 
+          {mode !== "forgot" ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-6 h-12 w-full"
+              disabled={busy}
+              onClick={signInWithGoogle}
+            >
+              Continue with Google
+            </Button>
+          ) : null}
           <form className="mt-6 space-y-4" onSubmit={submit}>
             {mode === "signup" ? (
               <div className="space-y-2">
@@ -157,9 +191,17 @@ function AuthPage() {
               </div>
             ) : null}
 
-            <Button type="submit" disabled={busy} className="tap-target h-12 w-full rounded-xl text-sm shadow-glow">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="tap-target h-12 w-full rounded-xl text-sm shadow-glow"
+            >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {mode === "signup" ? "Create account" : mode === "signin" ? "Sign in" : "Send reset link"}
+              {mode === "signup"
+                ? "Create account"
+                : mode === "signin"
+                  ? "Sign in"
+                  : "Send reset link"}
             </Button>
           </form>
 

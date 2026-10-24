@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, Spinner } from "@/components/states";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
@@ -33,10 +33,13 @@ function AdminPage() {
     enabled: isPlatformAdmin,
     queryFn: async () => {
       const [restaurants, subs, orders, tickets] = await Promise.all([
-        supabase.from("restaurants").select("id, name, city, is_suspended, created_at").limit(500),
-        supabase.from("subscriptions").select("restaurant_id, status, plan_id").limit(500),
-        supabase.from("orders").select("total, status").limit(5000),
-        supabase
+        firebaseClient
+          .from("restaurants")
+          .select("id, name, city, is_suspended, created_at")
+          .limit(500),
+        firebaseClient.from("subscriptions").select("restaurant_id, status, plan_id").limit(500),
+        firebaseClient.from("orders").select("total, status").limit(5000),
+        firebaseClient
           .from("support_tickets")
           .select("id, subject, status, created_at")
           .order("created_at", { ascending: false })
@@ -57,7 +60,10 @@ function AdminPage() {
 
   const suspend = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
-      const { error } = await supabase.from("restaurants").update({ is_suspended: value }).eq("id", id);
+      const { error } = await firebaseClient
+        .from("restaurants")
+        .update({ is_suspended: value })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -91,7 +97,9 @@ function AdminPage() {
 
   const data = query.data!;
   const active = data.subs.filter((s) => s.status === "active" || s.status === "trialing").length;
-  const churned = data.subs.filter((s) => s.status === "expired" || s.status === "cancelled").length;
+  const churned = data.subs.filter(
+    (s) => s.status === "expired" || s.status === "cancelled",
+  ).length;
   const gmv = data.orders
     .filter((o) => o.status === "completed")
     .reduce((sum, o) => sum + Number(o.total), 0);
@@ -118,13 +126,19 @@ function AdminPage() {
         <Metric label="Churned" value={String(churned)} />
         <Metric label="Platform GMV" value={currency(gmv)} />
         <Metric label="Orders" value={String(data.orders.length)} />
-        <Metric label="Open tickets" value={String(data.tickets.filter((t) => t.status === "open").length)} />
+        <Metric
+          label="Open tickets"
+          value={String(data.tickets.filter((t) => t.status === "open").length)}
+        />
       </div>
 
       <h2 className="mb-3 font-display text-sm font-semibold">Restaurants</h2>
       <div className="mb-6 space-y-2">
         {data.restaurants.map((r) => (
-          <div key={r.id} className="surface-card flex items-center justify-between rounded-2xl p-4">
+          <div
+            key={r.id}
+            className="surface-card flex items-center justify-between rounded-2xl p-4"
+          >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{r.name}</p>
               <p className="text-xs text-muted-foreground">
@@ -145,7 +159,10 @@ function AdminPage() {
       <h2 className="mb-3 font-display text-sm font-semibold">Recent support tickets</h2>
       <div className="space-y-2">
         {data.tickets.map((t) => (
-          <div key={t.id} className="surface-card flex items-center justify-between rounded-2xl p-4">
+          <div
+            key={t.id}
+            className="surface-card flex items-center justify-between rounded-2xl p-4"
+          >
             <p className="min-w-0 truncate text-sm">{t.subject}</p>
             <span
               className={cn(

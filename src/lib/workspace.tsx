@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { Session } from "@/integrations/firebase/client";
 
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import { firebaseClient } from "@/integrations/firebase/client";
+import type { Database } from "@/integrations/firebase/types";
 
 export type MemberRole = Database["public"]["Enums"]["member_role"];
 export type Restaurant = Database["public"]["Tables"]["restaurants"]["Row"];
@@ -60,13 +60,14 @@ export function useSession() {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+    firebaseClient.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = firebaseClient.auth.onAuthStateChange((_event, next) => {
       setSession(next);
+      setLoading(false);
     });
     return () => {
       mounted = false;
@@ -94,7 +95,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     queryKey: ["memberships", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("restaurant_members")
         .select("restaurant_id, role, restaurants(*)")
         .eq("user_id", userId!)
@@ -112,7 +113,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     queryKey: ["platform-admin", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("user_roles")
         .select("role")
         .eq("user_id", userId!)
@@ -124,20 +125,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
 
   const memberships = membershipsQuery.data ?? [];
-  const current =
-    memberships.find((m) => m.restaurant_id === activeId) ?? memberships[0] ?? null;
+  const current = memberships.find((m) => m.restaurant_id === activeId) ?? memberships[0] ?? null;
   const restaurantId = current?.restaurant_id ?? null;
 
   const subQuery = useQuery({
     queryKey: ["subscription", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("subscriptions")
         .select("*")
         .eq("restaurant_id", restaurantId!)
         .maybeSingle();
-      if (error && error.code !== "PGRST116") throw error;
+      if (error) throw error;
       return data ?? null;
     },
   });
@@ -145,7 +145,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const plansQuery = useQuery({
     queryKey: ["plans"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("plans")
         .select("*")
         .eq("is_active", true)

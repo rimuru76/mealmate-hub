@@ -14,7 +14,7 @@ import {
 
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, Spinner } from "@/components/states";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ function AnalyticsPage() {
     queryKey: ["analytics", restaurantId, days, activeBranchId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      let q = supabase
+      let q = firebaseClient
         .from("orders")
         .select("id, total, status, placed_at, customer_id, branch_id")
         .eq("restaurant_id", restaurantId!)
@@ -93,7 +93,7 @@ function AnalyticsPage() {
   ).length;
   const completionRate = orders.length ? Math.round((completed.length / orders.length) * 100) : 0;
 
-  const series = useMemo(() => {
+  const series = (() => {
     const buckets = new Map<string, { date: string; revenue: number; orders: number }>();
     for (let i = days - 1; i >= 0; i -= 1) {
       const d = new Date();
@@ -110,7 +110,7 @@ function AnalyticsPage() {
       if (o.status === "completed") bucket.revenue += Number(o.total);
     }
     return [...buckets.values()];
-  }, [orders, days]);
+  })();
 
   return (
     <div className="pb-8">
@@ -176,9 +176,21 @@ function AnalyticsPage() {
                       <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="var(--color-muted-foreground)" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="var(--color-muted-foreground)" width={40} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--color-border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    stroke="var(--color-muted-foreground)"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    stroke="var(--color-muted-foreground)"
+                    width={40}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "var(--color-card)",
@@ -219,14 +231,14 @@ function BranchPerformance({ restaurantId, since }: { restaurantId: string; sinc
     queryKey: ["branch-performance", restaurantId, since],
     queryFn: async () => {
       const [branches, orders, promos] = await Promise.all([
-        supabase.from("branches").select("id, name").eq("restaurant_id", restaurantId),
-        supabase
+        firebaseClient.from("branches").select("id, name").eq("restaurant_id", restaurantId),
+        firebaseClient
           .from("orders")
           .select("branch_id, total, status")
           .eq("restaurant_id", restaurantId)
           .gte("placed_at", since)
           .limit(5000),
-        supabase
+        firebaseClient
           .from("promotions")
           .select("name, uses, views, revenue_generated")
           .eq("restaurant_id", restaurantId)

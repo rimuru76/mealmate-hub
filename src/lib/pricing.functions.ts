@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFirebaseAuth } from "@/integrations/firebase/auth-middleware";
 
 export type PricingInput = {
   basePrice: number;
@@ -21,14 +21,17 @@ export type PricingInput = {
  * It never finalises a contract or a payment — a human must approve any final offer.
  */
 export const recommendPrice = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input: PricingInput) => input)
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("is_platform_admin", {
-      _user_id: context.userId,
-    });
+    const { data: isAdmin, error: roleError } = await context.firebaseClient.rpc(
+      "is_platform_admin",
+      {
+        _user_id: context.userId,
+      },
+    );
     if (roleError) throw roleError;
-    if (!isAdmin) throw new Error("Forbidden");
+    if (isAdmin !== true) throw new Error("Forbidden");
 
     const floor = Math.max(
       data.minimumPrice,
@@ -62,7 +65,11 @@ export const recommendPrice = createServerFn({ method: "POST" })
               },
               {
                 role: "user",
-                content: JSON.stringify({ ...data, computedFloor: floor, computedSuggestion: suggested }),
+                content: JSON.stringify({
+                  ...data,
+                  computedFloor: floor,
+                  computedSuggestion: suggested,
+                }),
               },
             ],
           }),

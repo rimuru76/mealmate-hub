@@ -1,5 +1,12 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronLeft, Grid2x2, LayoutDashboard, type LucideIcon, ReceiptText, UtensilsCrossed } from "lucide-react";
+import {
+  ChevronLeft,
+  Grid2x2,
+  LayoutDashboard,
+  type LucideIcon,
+  ReceiptText,
+  UtensilsCrossed,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useWorkspace } from "@/lib/workspace";
@@ -17,7 +24,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background pb-[calc(76px+env(safe-area-inset-bottom))]">
-      <div className="mx-auto w-full max-w-2xl px-4 pt-6">{children}</div>
+      <div className="mx-auto w-full max-w-2xl px-4 pt-6">
+        <a
+          href="https://mealsmates.site"
+          className="mb-4 inline-flex text-xs text-muted-foreground underline"
+        >
+          MealMate Consumer ↗
+        </a>
+        {children}
+      </div>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-2xl items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
           {TABS.map((tab) => {
@@ -61,7 +76,7 @@ export function PageHeader({
           type="button"
           aria-label="Go back"
           onClick={() => navigate({ to: "/more" })}
-           className="tap-target mt-0.5 flex items-center justify-center rounded-xl border border-border bg-card px-2 text-muted-foreground shadow-card"
+          className="tap-target mt-0.5 flex items-center justify-center rounded-xl border border-border bg-card px-2 text-muted-foreground shadow-card"
         >
           <ChevronLeft className="size-5" />
         </button>

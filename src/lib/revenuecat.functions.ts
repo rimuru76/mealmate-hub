@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFirebaseAuth } from "@/integrations/firebase/auth-middleware";
 
 type Entitlement = { expires_date: string | null; product_identifier: string | null };
 
@@ -10,19 +10,20 @@ type Entitlement = { expires_date: string | null; product_identifier: string | n
  * itself — this runs server-side with the RevenueCat secret key.
  */
 export const syncSubscription = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input: { restaurantId: string }) => {
     if (!input?.restaurantId) throw new Error("restaurantId is required");
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { firebaseClient, userId } = context;
 
-    const { data: membership, error: memberError } = await supabase
+    const { data: membership, error: memberError } = await firebaseClient
       .from("restaurant_members")
       .select("role")
       .eq("restaurant_id", data.restaurantId)
       .eq("user_id", userId)
+      .eq("is_active", true)
       .maybeSingle();
     if (memberError) throw memberError;
     if (!membership || !["owner", "manager"].includes(membership.role)) {
@@ -63,14 +64,14 @@ export const syncSubscription = createServerFn({ method: "POST" })
       ([, value]) => !value.expires_date || new Date(value.expires_date).getTime() > now,
     );
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { firebaseAdmin } = await import("@/integrations/firebase/client.server");
     const entitlement = active?.[0] ?? null;
     const productId = active?.[1]?.product_identifier ?? null;
     const expiration = active?.[1]?.expires_date ?? null;
 
     let planId: string | null = null;
     if (entitlement) {
-      const { data: plan } = await supabaseAdmin
+      const { data: plan } = await firebaseAdmin
         .from("plans")
         .select("id")
         .eq("entitlement", entitlement)
@@ -78,9 +79,9 @@ export const syncSubscription = createServerFn({ method: "POST" })
       planId = plan?.id ?? null;
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from("subscriptions")
-      .update({
+    const { error: updateError } = await firebaseAdmin.from("subscriptions").upsert(
+      {
+        restaurant_id: data.restaurantId,
         status: entitlement ? "active" : "expired",
         entitlement,
         product_id: productId,
@@ -89,8 +90,9 @@ export const syncSubscription = createServerFn({ method: "POST" })
         revenuecat_customer_id: body.subscriber?.original_app_user_id ?? data.restaurantId,
         app_user_id: data.restaurantId,
         last_synced_at: new Date().toISOString(),
-      })
-      .eq("restaurant_id", data.restaurantId);
+      },
+      { onConflict: "restaurant_id" },
+    );
     if (updateError) throw updateError;
 
     return { ok: true as const, entitlement, expiration };
@@ -104,19 +106,20 @@ export type BillingDiagnostics = Awaited<ReturnType<typeof billingDiagnostics>>;
  * subscription health pulled from RevenueCat and the database.
  */
 export const billingDiagnostics = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input: { restaurantId: string }) => {
     if (!input?.restaurantId) throw new Error("restaurantId is required");
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { firebaseClient, userId } = context;
 
-    const { data: membership, error: memberError } = await supabase
+    const { data: membership, error: memberError } = await firebaseClient
       .from("restaurant_members")
       .select("role")
       .eq("restaurant_id", data.restaurantId)
       .eq("user_id", userId)
+      .eq("is_active", true)
       .maybeSingle();
     if (memberError) throw memberError;
     if (!membership || !["owner", "manager"].includes(membership.role)) {
@@ -127,20 +130,20 @@ export const billingDiagnostics = createServerFn({ method: "POST" })
     const webhookSecret = process.env["REVENUECAT_WEBHOOK_SECRET"];
 
     // Plan catalogue configured in the backend (source for entitlement mapping).
-    const { data: plans } = await supabase
+    const { data: plans } = await firebaseClient
       .from("plans")
       .select("id, name, price_zar, entitlement, is_active")
       .order("position");
 
     // Webhook health: recent events recorded for this restaurant.
-    const { data: events } = await supabase
+    const { data: events } = await firebaseClient
       .from("subscription_events")
       .select("event_type, entitlement, product_id, created_at")
       .eq("restaurant_id", data.restaurantId)
       .order("created_at", { ascending: false })
       .limit(10);
 
-    const { data: subscription } = await supabase
+    const { data: subscription } = await firebaseClient
       .from("subscriptions")
       .select(
         "status, entitlement, product_id, plan_id, expiration_date, is_trial, revenuecat_customer_id, app_user_id, last_synced_at",
@@ -152,8 +155,18 @@ export const billingDiagnostics = createServerFn({ method: "POST" })
       reachable: boolean;
       message: string;
       customerId: string | null;
-      entitlements: { id: string; productId: string | null; expires: string | null; active: boolean }[];
-      products: { id: string; expires: string | null; store: string | null; periodType: string | null }[];
+      entitlements: {
+        id: string;
+        productId: string | null;
+        expires: string | null;
+        active: boolean;
+      }[];
+      products: {
+        id: string;
+        expires: string | null;
+        store: string | null;
+        periodType: string | null;
+      }[];
     } = {
       reachable: false,
       message: "RevenueCat key isn't configured yet.",

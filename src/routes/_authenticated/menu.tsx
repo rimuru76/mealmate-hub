@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency } from "@/lib/format";
 import { uploadImage } from "@/lib/storage";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/firebase/types";
 
 type MenuItem = Database["public"]["Tables"]["menu_items"]["Row"];
 type Category = Database["public"]["Tables"]["menu_categories"]["Row"];
@@ -64,7 +64,7 @@ function MenuPage() {
     queryKey: ["categories", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("menu_categories")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -78,7 +78,7 @@ function MenuPage() {
     queryKey: ["menu-items", restaurantId, categoryId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      let q = supabase
+      let q = firebaseClient
         .from("menu_items")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -93,7 +93,7 @@ function MenuPage() {
 
   const addCategory = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await supabase.from("menu_categories").insert({
+      const { error } = await firebaseClient.from("menu_categories").insert({
         restaurant_id: restaurantId!,
         name,
         position: (categoriesQuery.data?.length ?? 0) + 1,
@@ -109,7 +109,7 @@ function MenuPage() {
 
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("menu_items").delete().eq("id", id);
+      const { error } = await firebaseClient.from("menu_items").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -121,7 +121,10 @@ function MenuPage() {
 
   const toggleAvailable = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
-      const { error } = await supabase.from("menu_items").update({ is_available: value }).eq("id", id);
+      const { error } = await firebaseClient
+        .from("menu_items")
+        .update({ is_available: value })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["menu-items", restaurantId] }),
@@ -182,8 +185,8 @@ function MenuPage() {
         image_url: imageRef,
       };
       const { error } = editing
-        ? await supabase.from("menu_items").update(payload).eq("id", editing.id)
-        : await supabase.from("menu_items").insert(payload);
+        ? await firebaseClient.from("menu_items").update(payload).eq("id", editing.id)
+        : await firebaseClient.from("menu_items").insert(payload);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["menu-items", restaurantId] });
       setSheetOpen(false);
@@ -319,11 +322,17 @@ function MenuPage() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
           <SheetHeader>
-            <SheetTitle className="font-display">{editing ? "Edit item" : "New menu item"}</SheetTitle>
+            <SheetTitle className="font-display">
+              {editing ? "Edit item" : "New menu item"}
+            </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 px-4 pb-8">
             <Row label="Name">
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 rounded-xl" />
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="h-12 rounded-xl"
+              />
             </Row>
             <Row label="Description">
               <Textarea
@@ -343,7 +352,11 @@ function MenuPage() {
                 />
               </Row>
               <Row label="SKU">
-                <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="h-12 rounded-xl" />
+                <Input
+                  value={form.sku}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
               </Row>
               <Row label="Prep time (min)">
                 <Input
@@ -370,11 +383,31 @@ function MenuPage() {
               />
             </Row>
             <div className="grid grid-cols-2 gap-3">
-              <Toggle label="Vegetarian" value={form.is_vegetarian} onChange={(v) => setForm({ ...form, is_vegetarian: v })} />
-              <Toggle label="Vegan" value={form.is_vegan} onChange={(v) => setForm({ ...form, is_vegan: v })} />
-              <Toggle label="Halaal" value={form.is_halaal} onChange={(v) => setForm({ ...form, is_halaal: v })} />
-              <Toggle label="Spicy" value={form.is_spicy} onChange={(v) => setForm({ ...form, is_spicy: v })} />
-              <Toggle label="Available" value={form.is_available} onChange={(v) => setForm({ ...form, is_available: v })} />
+              <Toggle
+                label="Vegetarian"
+                value={form.is_vegetarian}
+                onChange={(v) => setForm({ ...form, is_vegetarian: v })}
+              />
+              <Toggle
+                label="Vegan"
+                value={form.is_vegan}
+                onChange={(v) => setForm({ ...form, is_vegan: v })}
+              />
+              <Toggle
+                label="Halaal"
+                value={form.is_halaal}
+                onChange={(v) => setForm({ ...form, is_halaal: v })}
+              />
+              <Toggle
+                label="Spicy"
+                value={form.is_spicy}
+                onChange={(v) => setForm({ ...form, is_spicy: v })}
+              />
+              <Toggle
+                label="Available"
+                value={form.is_available}
+                onChange={(v) => setForm({ ...form, is_available: v })}
+              />
             </div>
             <Row label="Photo">
               <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/50 px-4 py-4 text-sm text-muted-foreground">
@@ -417,7 +450,9 @@ function Chip({
       onClick={onClick}
       className={cn(
         "tap-target whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium",
-        active ? "border-primary bg-primary/15 text-primary" : "border-border bg-card text-muted-foreground",
+        active
+          ? "border-primary bg-primary/15 text-primary"
+          : "border-border bg-card text-muted-foreground",
       )}
     >
       {children}

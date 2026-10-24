@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/firebase/types";
 
 type Branch = Database["public"]["Tables"]["branches"]["Row"];
 
@@ -30,7 +30,15 @@ export const Route = createFileRoute("/_authenticated/branches")({
   component: BranchesPage,
 });
 
-const empty = { name: "", address: "", phone: "", manager_name: "", delivery_radius_km: "5", pickup_enabled: true, is_active: true };
+const empty = {
+  name: "",
+  address: "",
+  phone: "",
+  manager_name: "",
+  delivery_radius_km: "5",
+  pickup_enabled: true,
+  is_active: true,
+};
 
 function BranchesPage() {
   const { restaurant, isManager, features, activeBranchId, setActiveBranch } = useWorkspace();
@@ -44,7 +52,7 @@ function BranchesPage() {
     queryKey: ["branches", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("branches")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -70,8 +78,8 @@ function BranchesPage() {
         is_active: form.is_active,
       };
       const { error } = editing
-        ? await supabase.from("branches").update(payload).eq("id", editing.id)
-        : await supabase.from("branches").insert(payload);
+        ? await firebaseClient.from("branches").update(payload).eq("id", editing.id)
+        : await firebaseClient.from("branches").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -138,7 +146,9 @@ function BranchesPage() {
               <span
                 className={cn(
                   "rounded-full px-2 py-1 text-[10px] uppercase",
-                  branch.is_active ? "bg-success/15 text-success" : "bg-secondary text-muted-foreground",
+                  branch.is_active
+                    ? "bg-success/15 text-success"
+                    : "bg-secondary text-muted-foreground",
                 )}
               >
                 {branch.is_active ? "Active" : "Disabled"}
@@ -181,7 +191,9 @@ function BranchesPage() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
           <SheetHeader>
-            <SheetTitle className="font-display">{editing ? "Edit branch" : "New branch"}</SheetTitle>
+            <SheetTitle className="font-display">
+              {editing ? "Edit branch" : "New branch"}
+            </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 px-4 pb-8">
             {[
@@ -192,7 +204,9 @@ function BranchesPage() {
               ["delivery_radius_km", "Delivery radius (km)"],
             ].map(([key, label]) => (
               <div key={key} className="space-y-2">
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {label}
+                </Label>
                 <Input
                   className="h-12 rounded-xl"
                   value={(form as Record<string, string | boolean>)[key!] as string}
@@ -209,7 +223,10 @@ function BranchesPage() {
             </label>
             <label className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-3 py-3 text-sm">
               Active
-              <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+              <Switch
+                checked={form.is_active}
+                onCheckedChange={(v) => setForm({ ...form, is_active: v })}
+              />
             </label>
             <Button
               className="tap-target h-12 w-full rounded-2xl"

@@ -1,0 +1,7 @@
+{
+  "redirects": [
+    { "source": "/partner/dashboard", "destination": "/dashboard", "permanent": false },
+    { "source": "/partner", "destination": "/", "permanent": false },
+    { "source": "/hub", "destination": "/", "permanent": false }
+  ]
+}

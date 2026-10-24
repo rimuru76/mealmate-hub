@@ -1,4 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  uploadRestaurantImage,
+  removeRestaurantImage,
+} from "@/integrations/firebase/storage.functions";
 
 const MAX_DIMENSION = 1280;
 export const RESTAURANT_ASSETS_BUCKET = "restaurant-assets" as const;
@@ -35,22 +38,28 @@ export async function uploadImage(
 ): Promise<string> {
   const blob = await compressImage(file);
   const path = `${restaurantId}/${prefix}-${crypto.randomUUID()}.webp`;
-  const { error } = await supabase.storage.from(bucket).upload(path, blob, {
-    contentType: "image/webp",
-    upsert: true,
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1]!);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
-  if (error) throw error;
-  return `${bucket}/${path}`;
+  const result = await uploadRestaurantImage({
+    data: {
+      path: `${bucket}/${path}`,
+      base64,
+      contentType: blob.type as "image/webp" | "image/png" | "image/jpeg",
+    },
+  });
+  return result.url;
 }
 
-/** Turns a stored "bucket/path" reference into a temporary viewable URL. */
+/** Public restaurant media uses the same URLs in Consumer and Partners. */
 export async function signedUrl(reference: string | null): Promise<string | null> {
-  if (!reference) return null;
-  if (reference.startsWith("http")) return reference;
-  const [bucket, ...rest] = reference.split("/");
-  const path = rest.join("/");
-  if (!bucket || !path) return null;
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-  if (error) return null;
-  return data.signedUrl;
+  return reference?.startsWith("https://") || reference?.startsWith("http://127.0.0.1:")
+    ? reference
+    : null;
+}
+export async function deleteImage(reference: string) {
+  await removeRestaurantImage({ data: { reference } });
 }

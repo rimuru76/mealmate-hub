@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { uploadImage } from "@/lib/storage";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -73,7 +73,10 @@ export const Route = createFileRoute("/_authenticated/restaurant")({
   head: () => ({
     meta: [
       { title: "Restaurant profile — MealMate Partners" },
-      { name: "description", content: "Your restaurant details as customers see them on MealMate." },
+      {
+        name: "description",
+        content: "Your restaurant details as customers see them on MealMate.",
+      },
       { property: "og:title", content: "Restaurant profile — MealMate Partners" },
       { property: "og:description", content: "Update your MealMate storefront details." },
     ],
@@ -95,7 +98,7 @@ function RestaurantPage() {
     queryKey: ["restaurant-detail", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("restaurants")
         .select("*")
         .eq("id", restaurant!.id)
@@ -138,7 +141,7 @@ function RestaurantPage() {
       let coverRef = query.data?.cover_url ?? null;
       if (logo) logoRef = await uploadImage("restaurant-assets", restaurant!.id, logo, "logo");
       if (cover) coverRef = await uploadImage("restaurant-assets", restaurant!.id, cover, "cover");
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("restaurants")
         .update({
           name: form.name,
@@ -225,7 +228,9 @@ function RestaurantPage() {
         ))}
 
         <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Description</Label>
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Description
+          </Label>
           <Textarea
             rows={4}
             className="rounded-xl"
@@ -244,7 +249,10 @@ function RestaurantPage() {
           </label>
           <label className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-3 py-3 text-sm">
             Pickup
-            <Switch checked={flags.pickup} onCheckedChange={(v) => setFlags({ ...flags, pickup: v })} />
+            <Switch
+              checked={flags.pickup}
+              onCheckedChange={(v) => setFlags({ ...flags, pickup: v })}
+            />
           </label>
         </div>
 

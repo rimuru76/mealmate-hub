@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { recommendPrice } from "@/lib/pricing.functions";
 import { useWorkspace } from "@/lib/workspace";
@@ -19,7 +19,10 @@ export const Route = createFileRoute("/_authenticated/ai-pricing")({
   head: () => ({
     meta: [
       { title: "AI pricing engine — MealMate Partners" },
-      { name: "description", content: "Advisory pricing recommendations for Taz sales negotiations." },
+      {
+        name: "description",
+        content: "Advisory pricing recommendations for Taz sales negotiations.",
+      },
       { property: "og:title", content: "AI pricing engine — MealMate Partners" },
       { property: "og:description", content: "Advisory-only negotiation support." },
     ],
@@ -78,7 +81,7 @@ function PricingPage() {
     queryKey: ["ai-pricing"],
     enabled: isPlatformAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("ai_pricing_negotiations")
         .select("*")
         .order("created_at", { ascending: false })
@@ -91,7 +94,7 @@ function PricingPage() {
   const saveRecord = useMutation({
     mutationFn: async (approved: boolean) => {
       if (!result) return;
-      const { error } = await supabase.from("ai_pricing_negotiations").insert({
+      const { error } = await firebaseClient.from("ai_pricing_negotiations").insert({
         restaurant_name: form.restaurantName || null,
         base_price: Number(form.basePrice),
         minimum_price: Number(form.minimumPrice),
@@ -161,12 +164,17 @@ function PricingPage() {
 
   return (
     <div className="pb-8">
-      <PageHeader title="AI pricing engine" subtitle="Advisory only — a human approves every offer" />
+      <PageHeader
+        title="AI pricing engine"
+        subtitle="Advisory only — a human approves every offer"
+      />
 
       <section className="surface-card mb-4 grid grid-cols-2 gap-3 rounded-3xl p-4">
         {FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</Label>
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {label}
+            </Label>
             <Input
               className="h-11 rounded-xl"
               value={form[key]}
@@ -174,11 +182,7 @@ function PricingPage() {
             />
           </div>
         ))}
-        <Button
-          className="tap-target col-span-2 h-12 rounded-2xl"
-          disabled={busy}
-          onClick={run}
-        >
+        <Button className="tap-target col-span-2 h-12 rounded-2xl" disabled={busy} onClick={run}>
           <Sparkles className="size-4" /> {busy ? "Thinking…" : "Get recommendation"}
         </Button>
       </section>
@@ -187,7 +191,10 @@ function PricingPage() {
         <section className="surface-card mb-4 space-y-3 rounded-3xl p-4">
           <p className="font-display text-sm font-semibold">Recommendation</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <Info label="Negotiation range" value={`${currency(result.rangeLow)} – ${currency(result.rangeHigh)}`} />
+            <Info
+              label="Negotiation range"
+              value={`${currency(result.rangeLow)} – ${currency(result.rangeHigh)}`}
+            />
             <Info label="Current offer" value={currency(Number(form.currentOffer))} />
             <Info label="Suggested" value={currency(result.suggested)} />
             <Info label="Counter-offer" value={currency(result.counterOffer)} />
@@ -226,7 +233,9 @@ function PricingPage() {
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               Suggested {currency(Number(n.suggested_offer ?? 0))} ·{" "}
-              {n.human_approved ? `approved at ${currency(Number(n.final_offer ?? 0))}` : "awaiting approval"}
+              {n.human_approved
+                ? `approved at ${currency(Number(n.final_offer ?? 0))}`
+                : "awaiting approval"}
             </p>
           </div>
         ))}

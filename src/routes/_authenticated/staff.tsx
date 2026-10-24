@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { shortDate } from "@/lib/format";
 import { useWorkspace, type MemberRole } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ function StaffPage() {
     queryKey: ["members", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("restaurant_members")
         .select("id, role, is_active, user_id, created_at")
         .eq("restaurant_id", restaurantId!);
@@ -47,7 +47,7 @@ function StaffPage() {
       const ids = (data ?? []).map((m) => m.user_id);
       const names = new Map<string, string>();
       if (ids.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profiles } = await firebaseClient
           .from("profiles")
           .select("id, full_name")
           .in("id", ids);
@@ -61,7 +61,7 @@ function StaffPage() {
     queryKey: ["invites", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("staff_invites")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -73,7 +73,7 @@ function StaffPage() {
 
   const invite = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("staff_invites").insert({
+      const { error } = await firebaseClient.from("staff_invites").insert({
         restaurant_id: restaurantId!,
         email: email.trim().toLowerCase(),
         role,
@@ -91,7 +91,7 @@ function StaffPage() {
 
   const toggleMember = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("restaurant_members")
         .update({ is_active: value })
         .eq("id", id);
@@ -136,11 +136,12 @@ function StaffPage() {
 
       <div className="space-y-3">
         {(membersQuery.data ?? []).map((m) => (
-          <article key={m.id} className="surface-card flex items-center justify-between rounded-3xl p-4">
+          <article
+            key={m.id}
+            className="surface-card flex items-center justify-between rounded-3xl p-4"
+          >
             <div className="min-w-0">
-              <p className="truncate font-display text-sm font-semibold">
-                {m.full_name}
-              </p>
+              <p className="truncate font-display text-sm font-semibold">{m.full_name}</p>
               <p className="text-xs capitalize text-muted-foreground">
                 {m.role} · joined {shortDate(m.created_at)}
               </p>
@@ -177,7 +178,10 @@ function StaffPage() {
       ) : (
         <div className="space-y-2">
           {(invitesQuery.data ?? []).map((i) => (
-            <div key={i.id} className="surface-card flex items-center justify-between rounded-2xl p-3">
+            <div
+              key={i.id}
+              className="surface-card flex items-center justify-between rounded-2xl p-3"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm">{i.email}</p>
                 <p className="text-xs capitalize text-muted-foreground">

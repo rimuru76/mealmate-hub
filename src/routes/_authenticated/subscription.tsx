@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/AppShell";
 import { ErrorState, Spinner } from "@/components/states";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { syncSubscription } from "@/lib/revenuecat.functions";
 import { useWorkspace } from "@/lib/workspace";
@@ -18,7 +18,10 @@ export const Route = createFileRoute("/_authenticated/subscription")({
   head: () => ({
     meta: [
       { title: "Subscription — MealMate Partners" },
-      { name: "description", content: "Your MealMate Partners plan, renewal date and entitlements." },
+      {
+        name: "description",
+        content: "Your MealMate Partners plan, renewal date and entitlements.",
+      },
       { property: "og:title", content: "Subscription — MealMate Partners" },
       { property: "og:description", content: "Manage your MealMate Partners subscription." },
     ],
@@ -35,7 +38,7 @@ function SubscriptionPage() {
   const plansQuery = useQuery({
     queryKey: ["plans-all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("plans")
         .select("*")
         .eq("is_active", true)
@@ -84,7 +87,9 @@ function SubscriptionPage() {
       <section className="surface-card mb-4 rounded-3xl p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Current plan</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Current plan
+            </p>
             <p className="font-display text-xl font-semibold">{plan?.name ?? "No plan"}</p>
             {plan ? (
               <p className="text-sm text-muted-foreground">
@@ -182,8 +187,8 @@ function SubscriptionPage() {
 
       <p className="mt-5 flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-        RevenueCat is the only source of truth for billing. Entitlements are written server-side from
-        RevenueCat's webhook, never from this device.
+        RevenueCat is the only source of truth for billing. Entitlements are written server-side
+        from RevenueCat's webhook, never from this device.
       </p>
     </div>
   );

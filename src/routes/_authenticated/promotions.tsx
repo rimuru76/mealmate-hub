@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/firebase/types";
 
 type Promotion = Database["public"]["Tables"]["promotions"]["Row"];
 type PromoType = Database["public"]["Enums"]["promo_type"];
@@ -25,7 +25,6 @@ const TYPES: { key: PromoType; label: string }[] = [
   { key: "percentage", label: "% discount" },
   { key: "fixed", label: "Fixed discount" },
   { key: "bogo", label: "Buy one get one" },
-  { key: "free_item", label: "Free item" },
   { key: "free_delivery", label: "Free delivery" },
 ];
 
@@ -65,7 +64,7 @@ function PromotionsPage() {
     queryKey: ["promotions", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("promotions")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -92,8 +91,8 @@ function PromotionsPage() {
         is_active: form.is_active,
       };
       const { error } = editing
-        ? await supabase.from("promotions").update(payload).eq("id", editing.id)
-        : await supabase.from("promotions").insert(payload);
+        ? await firebaseClient.from("promotions").update(payload).eq("id", editing.id)
+        : await firebaseClient.from("promotions").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {

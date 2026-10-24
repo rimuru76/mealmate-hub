@@ -24,7 +24,7 @@ import {
 
 import { SubscriptionBanner } from "@/components/AppShell";
 import { ErrorState, ListSkeleton } from "@/components/states";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, greeting } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -60,7 +60,7 @@ function Dashboard() {
     queryFn: async () => {
       const since = new Date();
       since.setDate(since.getDate() - 29);
-      let q = supabase
+      let q = firebaseClient
         .from("orders")
         .select("id, status, total, created_at, customer_id")
         .eq("restaurant_id", restaurantId!)
@@ -78,7 +78,7 @@ function Dashboard() {
     queryKey: ["popular-items", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("order_items")
         .select("name, quantity")
         .eq("restaurant_id", restaurantId!)
@@ -99,7 +99,7 @@ function Dashboard() {
     queryKey: ["customer-count", restaurantId],
     enabled: !!restaurantId,
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { count, error } = await firebaseClient
         .from("customers")
         .select("id", { count: "exact", head: true })
         .eq("restaurant_id", restaurantId!);
@@ -125,7 +125,9 @@ function Dashboard() {
   const revenueToday = today
     .filter((o) => o.status === "completed")
     .reduce((sum, o) => sum + Number(o.total), 0);
-  const pending = orders.filter((o) => ["new", "accepted", "preparing", "ready"].includes(o.status));
+  const pending = orders.filter((o) =>
+    ["new", "accepted", "preparing", "ready"].includes(o.status),
+  );
   const completedToday = today.filter((o) => o.status === "completed");
   const aov = completedToday.length ? revenueToday / completedToday.length : 0;
 
@@ -197,7 +199,13 @@ function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={10} stroke="var(--color-muted-foreground)" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={10}
+                  stroke="var(--color-muted-foreground)"
+                />
                 <Tooltip
                   contentStyle={{
                     background: "var(--color-card)",
@@ -206,7 +214,12 @@ function Dashboard() {
                     color: "var(--color-foreground)",
                   }}
                 />
-                <Area dataKey="revenue" stroke="var(--color-primary)" fill="url(#rev)" strokeWidth={2} />
+                <Area
+                  dataKey="revenue"
+                  stroke="var(--color-primary)"
+                  fill="url(#rev)"
+                  strokeWidth={2}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -219,7 +232,13 @@ function Dashboard() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={series}>
               <CartesianGrid vertical={false} stroke="var(--color-border)" />
-              <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={10} stroke="var(--color-muted-foreground)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                fontSize={10}
+                stroke="var(--color-muted-foreground)"
+              />
               <Tooltip
                 contentStyle={{
                   background: "var(--color-card)",

@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -13,7 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { WorkspaceProvider } from "@/lib/workspace";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 
 function NotFoundComponent() {
   return (
@@ -86,7 +86,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "MealMate Partners" },
       {
         name: "description",
-        content: "Run your restaurant. Grow your business. The operating system for MealMate restaurants.",
+        content:
+          "Run your restaurant. Grow your business. The operating system for MealMate restaurants.",
       },
       { name: "author", content: "Taz Technologies" },
       { name: "theme-color", content: "#FBFBFA" },
@@ -126,13 +127,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function AuthSync() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = firebaseClient.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      if (event === "SIGNED_OUT") queryClient.clear();
       router.invalidate();
     });
     return () => data.subscription.unsubscribe();
-  }, [router]);
+  }, [router, queryClient]);
   return null;
 }
 

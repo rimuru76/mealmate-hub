@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFirebaseAuth } from "@/integrations/firebase/auth-middleware";
 
 export type InsightsInput = {
   restaurantId: string;
@@ -70,17 +70,18 @@ async function readResponsesStream(res: Response) {
  * the manager's own context, and asks the AI model for tailored recommendations.
  */
 export const performanceInsights = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input: InsightsInput) => {
     if (!input?.restaurantId) throw new Error("Missing restaurant");
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { data: membership, error: memberError } = await context.supabase
+    const { data: membership, error: memberError } = await context.firebaseClient
       .from("restaurant_members")
       .select("role")
       .eq("restaurant_id", data.restaurantId)
       .eq("user_id", context.userId)
+      .eq("is_active", true)
       .maybeSingle();
     if (memberError) throw memberError;
     if (!membership || (membership.role !== "owner" && membership.role !== "manager")) {
@@ -90,7 +91,7 @@ export const performanceInsights = createServerFn({ method: "POST" })
     const days = Math.min(Math.max(Math.round(data.days || 30), 1), 180);
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: orders, error: ordersError } = await context.supabase
+    const { data: orders, error: ordersError } = await context.firebaseClient
       .from("orders")
       .select("id,total,status,fulfillment,placed_at")
       .eq("restaurant_id", data.restaurantId)
@@ -102,16 +103,17 @@ export const performanceInsights = createServerFn({ method: "POST" })
     const rows = orders ?? [];
     const completedRows = rows.filter((o) => o.status === "completed");
     const revenue = completedRows.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-    const cancelled = rows.filter((o) => o.status === "cancelled" || o.status === "rejected").length;
+    const cancelled = rows.filter(
+      (o) => o.status === "cancelled" || o.status === "rejected",
+    ).length;
     const hourCounts = new Map<number, number>();
     for (const o of rows) {
       const hour = new Date(o.placed_at).getHours();
       hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
     }
-    const busiestHour =
-      [...hourCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const busiestHour = [...hourCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-    const { data: items, error: itemsError } = await context.supabase
+    const { data: items, error: itemsError } = await context.firebaseClient
       .from("order_items")
       .select("name,quantity,total_price,order_id")
       .eq("restaurant_id", data.restaurantId)
@@ -200,13 +202,16 @@ export const performanceInsights = createServerFn({ method: "POST" })
     });
 
     if (!res.ok) {
-      if (res.status === 429) throw new Error("The AI service is busy. Please try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits are used up. Top up to keep using recommendations.");
+      if (res.status === 429)
+        throw new Error("The AI service is busy. Please try again in a moment.");
+      if (res.status === 402)
+        throw new Error("AI credits are used up. Top up to keep using recommendations.");
       throw new Error("Couldn't generate recommendations right now. Please try again.");
     }
 
     const recommendations = await readResponsesStream(res);
-    if (!recommendations) throw new Error("The model returned no recommendations. Please try again.");
+    if (!recommendations)
+      throw new Error("The model returned no recommendations. Please try again.");
 
     return {
       metrics,

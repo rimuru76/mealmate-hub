@@ -6,10 +6,10 @@ import { useState } from "react";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { currency, shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/firebase/types";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
 
@@ -34,7 +34,7 @@ function CustomersPage() {
     queryKey: ["customers", restaurantId, activeBranchId, search],
     enabled: !!restaurantId,
     queryFn: async () => {
-      let q = supabase
+      let q = firebaseClient
         .from("customers")
         .select("*")
         .eq("restaurant_id", restaurantId!)
@@ -86,12 +86,17 @@ function CustomersPage() {
                     Customer since {shortDate(c.created_at)}
                   </p>
                 </div>
-                <p className="font-display text-sm font-semibold">{currency(Number(c.total_spent))}</p>
+                <p className="font-display text-sm font-semibold">
+                  {currency(Number(c.total_spent))}
+                </p>
               </div>
               <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                 <Stat label="Orders" value={String(c.total_orders)} />
                 <Stat label="Avg order" value={currency(aov)} />
-                <Stat label="Last order" value={c.last_order_at ? shortDate(c.last_order_at) : "—"} />
+                <Stat
+                  label="Last order"
+                  value={c.last_order_at ? shortDate(c.last_order_at) : "—"}
+                />
               </dl>
             </article>
           );

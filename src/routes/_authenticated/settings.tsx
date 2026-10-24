@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { deleteAccount } from "@/lib/account.functions";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -39,7 +39,7 @@ function SettingsPage() {
     queryKey: ["profile", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("profiles")
         .select("*")
         .eq("id", userId!)
@@ -57,10 +57,12 @@ function SettingsPage() {
 
   const saveProfile = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { error } = await firebaseClient
         .from("profiles")
-        .update({ full_name: fullName || null, phone: phone || null })
-        .eq("id", userId!);
+        .upsert(
+          { id: userId!, full_name: fullName || null, phone: phone || null },
+          { onConflict: "id" },
+        );
       if (error) throw error;
     },
     onSuccess: () => {
@@ -75,7 +77,7 @@ function SettingsPage() {
       toast.error("Use at least 8 characters for your new password.");
       return;
     }
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await firebaseClient.auth.updateUser({ password });
     if (error) toast.error("Password couldn't be changed. Please try again.");
     else {
       setPassword("");
@@ -86,17 +88,22 @@ function SettingsPage() {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await firebaseClient.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
   async function removeMyAccount() {
-    if (!window.confirm("Delete your account permanently? This cannot be undone.")) return;
+    if (
+      !window.confirm(
+        "Delete your MealMate account from both Consumer and Partners permanently? This cannot be undone.",
+      )
+    )
+      return;
     setBusy(true);
     try {
       await removeAccount({});
       queryClient.clear();
-      await supabase.auth.signOut();
+      await firebaseClient.auth.signOut();
       toast.success("Your account has been deleted.");
       navigate({ to: "/auth", replace: true });
     } catch {
@@ -122,7 +129,11 @@ function SettingsPage() {
         </div>
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">Phone</Label>
-          <Input className="h-12 rounded-xl" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input
+            className="h-12 rounded-xl"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
         <Button
           className="tap-target h-12 w-full rounded-2xl"
@@ -136,7 +147,9 @@ function SettingsPage() {
       <section className="surface-card mb-4 space-y-4 rounded-3xl p-4">
         <p className="font-display text-sm font-semibold">Security</p>
         <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">New password</Label>
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            New password
+          </Label>
           <Input
             type="password"
             className="h-12 rounded-xl"
@@ -144,7 +157,11 @@ function SettingsPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <Button variant="secondary" className="tap-target h-12 w-full rounded-2xl" onClick={changePassword}>
+        <Button
+          variant="secondary"
+          className="tap-target h-12 w-full rounded-2xl"
+          onClick={changePassword}
+        >
           Change password
         </Button>
       </section>
@@ -176,7 +193,11 @@ function SettingsPage() {
         </p>
       </section>
 
-      <Button variant="secondary" className="tap-target mb-3 h-12 w-full rounded-2xl" onClick={signOut}>
+      <Button
+        variant="secondary"
+        className="tap-target mb-3 h-12 w-full rounded-2xl"
+        onClick={signOut}
+      >
         <LogOut className="size-4" /> Log out
       </Button>
 

@@ -11,12 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { firebaseClient } from "@/integrations/firebase/client";
 import { shortDate } from "@/lib/format";
 import { useWorkspace } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = ["Help centre", "Contact support", "Report a problem", "Feature request", "Account"];
+const CATEGORIES = [
+  "Help centre",
+  "Contact support",
+  "Report a problem",
+  "Feature request",
+  "Account",
+];
 const PRIORITIES = ["low", "normal", "high"];
 
 export const Route = createFileRoute("/_authenticated/support")({
@@ -46,7 +52,7 @@ function SupportPage() {
     queryKey: ["tickets", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await firebaseClient
         .from("support_tickets")
         .select("*")
         .order("created_at", { ascending: false })
@@ -58,7 +64,7 @@ function SupportPage() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("support_tickets").insert({
+      const { error } = await firebaseClient.from("support_tickets").insert({
         restaurant_id: restaurant?.id ?? null,
         created_by: userId!,
         subject: form.subject.trim(),
@@ -137,7 +143,9 @@ function SupportPage() {
           </SheetHeader>
           <div className="space-y-4 px-4 pb-8">
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Subject</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Subject
+              </Label>
               <Input
                 className="h-12 rounded-xl"
                 value={form.subject}
