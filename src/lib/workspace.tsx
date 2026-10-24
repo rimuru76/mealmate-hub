@@ -144,6 +144,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const plansQuery = useQuery({
     queryKey: ["plans"],
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await firebaseClient
         .from("plans")

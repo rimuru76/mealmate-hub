@@ -11,6 +11,7 @@ const nitroConfig = {
   preset: "vercel",
   // Keep the Admin SDK's CommonJS modules and gRPC proto files intact on Node.
   traceDeps: ["firebase-admin", "@google-cloud/firestore*", "google-gax*"],
+  vercel: { functions: { regions: ["cpt1"] } },
 } satisfies NitroConfig;
 
 export default defineConfig({

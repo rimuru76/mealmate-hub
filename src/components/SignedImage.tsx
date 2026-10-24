@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-
-import { signedUrl } from "@/lib/storage";
+import { publicImageUrl } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 export function SignedImage({
@@ -14,22 +12,7 @@ export function SignedImage({
   className?: string;
   fallback?: React.ReactNode;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    let objectUrl: string | null = null;
-    setUrl(null);
-    signedUrl(reference).then((value) => {
-      if (value?.startsWith("blob:")) objectUrl = value;
-      if (active) setUrl(value);
-      else if (objectUrl) URL.revokeObjectURL(objectUrl);
-    });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [reference]);
+  const url = publicImageUrl(reference);
 
   if (!url) {
     return (
@@ -39,5 +22,13 @@ export function SignedImage({
     );
   }
 
-  return <img src={url} alt={alt} loading="lazy" className={cn("object-cover", className)} />;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className={cn("object-cover", className)}
+    />
+  );
 }

@@ -69,11 +69,10 @@ type Access = { roles: Map<string, string>; admin: boolean };
 async function accessFor(actor: Actor | null): Promise<Access> {
   if (!actor || actor.admin) return { roles: new Map(), admin: true };
   const { db } = getFirebaseAdmin();
-  const docs = await db
-    .collection(collectionName("restaurant_members"))
-    .where("user_id", "==", actor.uid)
-    .get();
-  const owned = await db.collection("restaurants").where("owner_id", "==", actor.uid).get();
+  const [docs, owned] = await Promise.all([
+    db.collection(collectionName("restaurant_members")).where("user_id", "==", actor.uid).get(),
+    db.collection("restaurants").where("owner_id", "==", actor.uid).get(),
+  ]);
   const access = {
     admin: false,
     roles: new Map(

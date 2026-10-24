@@ -55,10 +55,14 @@ export async function uploadImage(
 }
 
 /** Public restaurant media uses the same URLs in Consumer and Partners. */
-export async function signedUrl(reference: string | null): Promise<string | null> {
+export function publicImageUrl(reference: string | null): string | null {
   return reference?.startsWith("https://") || reference?.startsWith("http://127.0.0.1:")
     ? reference
     : null;
+}
+// Preserve the asynchronous helper for existing callers.
+export async function signedUrl(reference: string | null): Promise<string | null> {
+  return publicImageUrl(reference);
 }
 export async function deleteImage(reference: string) {
   await removeRestaurantImage({ data: { reference } });

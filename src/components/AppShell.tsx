@@ -41,6 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={tab.to}
                 to={tab.to}
+                preload="intent"
                 className={cn(
                   "tap-target flex flex-1 flex-col items-center gap-1 rounded-xl py-3 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
