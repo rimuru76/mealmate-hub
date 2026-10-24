@@ -16,7 +16,7 @@
     "firebase:emulators": "firebase emulators:start --project demo-mealmate --only auth,firestore,storage"
   },
   "overrides": {
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.15"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
